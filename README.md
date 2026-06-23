@@ -23,14 +23,14 @@
 
 ## 담당 기능
 
-* 마이페이지 메인 (공통 파일명 : MyPage)
-* 예약 내역
-* 여행 캘린더
-* 체크리스트 (공통 파일명 : Checklist, ChecklistItem)
-* 찜목록 (공통 파일명 : Wishlist)
-* 나의 후기
-* 나의 문의
-* 회원정보 수정
+- 마이페이지 메인 (MyPage)
+- 예약 내역
+- 여행 캘린더
+- 체크리스트 (Checklist, ChecklistItem)
+- 찜목록 (Wishlist)
+- 나의 후기
+- 나의 문의
+- 회원정보 수정
 
 ※ 담당 화면 코드는 tripRoadFront/src/pages/myPage 경로에서 확인할 수 있습니다.
 
