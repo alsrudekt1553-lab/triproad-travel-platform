@@ -32,6 +32,8 @@
 * 나의 문의
 * 회원정보 수정
 
+※ 담당 화면 코드는 tripRoadFront/src/pages/myPage 경로에서 확인할 수 있습니다.
+
 ## 주요 구현 내용
 
 * REST API 연동
