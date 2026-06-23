@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.oracle.tripRoad.EmailVerificationMapper">
+
+	<delete id="deleteByUserIdAndTokenType" parameterType="EmailVerificationDto">
+		DELETE FROM email_verification
+		WHERE user_id = #{userId}
+		AND token_type = #{tokenType}
+	</delete>
+
+	<insert id="insertToken" parameterType="EmailVerificationDto">
+		<selectKey keyProperty="tokenId" resultType="long" order="BEFORE">
+			SELECT email_verification_seq.NEXTVAL FROM dual
+		</selectKey>
+
+		INSERT INTO email_verification (
+			  token_id
+			, user_id
+			, email_token
+			, token_type
+			, fail_count
+			, created_at
+			, expires_at
+		) VALUES (
+			  #{tokenId}
+			, #{userId}
+			, #{emailToken}
+			, #{tokenType}
+			, 0
+			, SYSDATE
+			, SYSDATE + (5 / 1440)
+		)
+	</insert>
+
+	<select id="selectValidToken" parameterType="EmailVerificationDto" resultType="EmailVerificationDto">
+		SELECT
+			  token_id    AS tokenId
+			, user_id     AS userId
+			, email_token AS emailToken
+			, token_type  AS tokenType
+			, fail_count  AS failCount
+			, created_at  AS createdAt
+			, expires_at  AS expiresAt
+		FROM email_verification
+		WHERE user_id = #{userId}
+		AND token_type = #{tokenType}
+		AND expires_at > SYSDATE
+	</select>
+
+	<update id="increaseFailCount" parameterType="EmailVerificationDto">
+		UPDATE email_verification
+		SET fail_count = fail_count + 1
+		WHERE user_id = #{userId}
+		AND token_type = #{tokenType}
+	</update>
+
+	<delete id="deleteExpiredTokens">
+		DELETE FROM email_verification
+		WHERE expires_at &lt;= SYSDATE
+	</delete>
+
+</mapper>

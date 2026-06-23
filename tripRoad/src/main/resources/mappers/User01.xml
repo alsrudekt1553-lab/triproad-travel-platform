@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.oracle.tripRoad.User01Mapper">
+
+	<insert id="insertUser" parameterType="User01Dto">
+		<selectKey keyProperty="userId" resultType="long" order="BEFORE">
+			SELECT seq_user_id.NEXTVAL FROM dual
+		</selectKey>
+
+		INSERT INTO user01 (
+			  user_id
+			, login_id
+			, password
+			, nickname
+			, name
+			, email
+			, phone
+			, profile_image
+			, created_at
+			, role
+			, user_status
+		) VALUES (
+			  #{userId}
+			, #{loginId}
+			, #{password}
+			, #{nickname}
+			, #{name}
+			, #{email}
+			, #{phone}
+			, #{profileImage, jdbcType=VARCHAR}
+			, SYSDATE
+			, NVL(#{role, jdbcType=NUMERIC}, 100)
+			, NVL(#{userStatus, jdbcType=NUMERIC}, 100)
+		)
+	</insert>
+
+	<select id="countByLoginId" parameterType="string" resultType="int">
+		SELECT COUNT(*)
+		FROM user01
+		WHERE login_id = #{loginId}
+	</select>
+
+	<select id="login" parameterType="User01Dto" resultType="User01Dto">
+		SELECT
+			  user_id       AS userId
+			, login_id      AS loginId
+			, password      AS password
+			, nickname      AS nickname
+			, name          AS name
+			, email         AS email
+			, phone         AS phone
+			, profile_image AS profileImage
+			, created_at    AS createdAt
+			, role          AS role
+			, user_status   AS userStatus
+		FROM user01
+		WHERE login_id = #{loginId}
+		AND password = #{password}
+		AND user_status = 100
+	</select>
+
+	<select id="selectUser" parameterType="long" resultType="User01Dto">
+		SELECT
+			  user_id       AS userId
+			, login_id      AS loginId
+			, password      AS password
+			, nickname      AS nickname
+			, name          AS name
+			, email         AS email
+			, phone         AS phone
+			, profile_image AS profileImage
+			, created_at    AS createdAt
+			, role          AS role
+			, user_status   AS userStatus
+		FROM user01
+		WHERE user_id = #{userId}
+	</select>
+
+	<select id="userTotal" resultType="int">
+		SELECT COUNT(*)
+		FROM user01
+		WHERE user_status = 100
+	</select>
+
+	<select id="userListAll"
+			parameterType="com.oracle.tripRoad.dto.PageRequestDTO"
+			resultType="User01Dto">
+		<![CDATA[
+		SELECT *
+		FROM (
+			SELECT rownum rn, a.*
+			FROM (
+				SELECT
+					  user_id       AS userId
+					, login_id      AS loginId
+					, password      AS password
+					, nickname      AS nickname
+					, name          AS name
+					, email         AS email
+					, phone         AS phone
+					, profile_image AS profileImage
+					, created_at    AS createdAt
+					, role          AS role
+					, user_status   AS userStatus
+				FROM user01
+				WHERE user_status = 100
+				ORDER BY user_id DESC
+			) a
+		)
+		WHERE rn >= #{start}
+		AND rn <= #{end}
+		]]>
+	</select>
+
+	<update id="updateUser" parameterType="User01Dto">
+	    UPDATE user01
+	    SET
+	          nickname = #{nickname}
+	        , name = #{name}
+	        , email = #{email}
+	        , phone = #{phone}
+	        <if test="profileImage != null and profileImage != ''">
+	            , profile_image = #{profileImage, jdbcType=VARCHAR}
+	        </if>
+	    WHERE user_id = #{userId}
+	</update>
+
+	<select id="findLoginIdByNameAndEmail" parameterType="User01Dto" resultType="User01Dto">
+		SELECT
+			  login_id      AS loginId
+			, name          AS name
+			, email         AS email
+		FROM user01
+		WHERE name = #{name}
+		AND email = #{email}
+		AND user_status = 100
+	</select>
+
+	<select id="verifyUserByLoginIdAndEmail" parameterType="User01Dto" resultType="User01Dto">
+		SELECT
+			  user_id       AS userId
+			, login_id      AS loginId
+			, email         AS email
+		FROM user01
+		WHERE login_id = #{loginId}
+		AND name = #{name}
+		AND email = #{email}
+		AND user_status = 100
+	</select>
+
+	<update id="updatePassword" parameterType="User01Dto">
+		UPDATE user01
+		SET password = #{password}
+		WHERE user_id = #{userId}
+	</update>
+
+	<update id="deleteUser" parameterType="long">
+		UPDATE user01
+		SET user_status = 900
+		WHERE user_id = #{userId}
+	</update>
+
+</mapper>

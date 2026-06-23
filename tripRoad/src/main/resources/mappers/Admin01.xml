@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.oracle.tripRoad.Admin01Mapper">
+
+    <select id="bookingList" resultType="Admin01BookingDto">
+        SELECT
+            b.booking_id AS bookingId,
+            u.name AS userName,
+            p.product_name AS productName,
+            b.created_at AS bookingDate,
+            s.code_contents AS statusName,
+            b.status AS status
+        FROM booking b
+        JOIN user01 u ON b.user_id = u.user_id
+        JOIN product_schedule ps ON b.schedule_id = ps.schedule_id
+        JOIN travel_product p ON ps.product_id = p.product_id
+        LEFT JOIN status_type s
+          ON s.bcode = 200
+         AND b.status = s.mcode
+        ORDER BY b.created_at DESC
+    </select>
+
+	<insert id="addProduct" parameterType="Admin01ProductDto">
+	    <selectKey keyProperty="productId" resultType="long" order="BEFORE">
+	        SELECT travel_product_seq.NEXTVAL FROM dual
+	    </selectKey>
+	
+	    INSERT INTO travel_product (
+	        product_id,
+	        region_id,
+	        theme_code,
+	        product_name,
+	        description,
+	        price,
+	        reg_date
+	    ) VALUES (
+	        #{productId},
+	        #{regionId},
+	        #{themeCode},
+	        #{productName},
+	        #{description},
+	        #{price},
+	        SYSDATE
+	    )
+	</insert>
+	
+	<insert id="addProductSchedule" parameterType="ProductScheduleDto">
+	    INSERT INTO product_schedule (
+	        schedule_id,
+	        product_id,
+	        title,
+	        content,
+	        start_date,
+	        end_date,
+	        status,
+	        max_headcount
+	    ) VALUES (
+	        product_schedule_seq.NEXTVAL,
+	        #{productId},
+	        #{title},
+	        #{content},
+	        #{startDate},
+	        #{endDate},
+	        #{status},
+	        #{maxHeadcount}
+	    )
+	</insert>
+	
+	<insert id="addProductImage" parameterType="ProductImageDto">
+	    INSERT INTO product_image (
+	        image_id,
+	        product_id,
+	        image_name,
+	        img_order
+	    ) VALUES (
+	        product_image_seq.NEXTVAL,
+	        #{productId},
+	        #{imageName},
+	        #{imgOrder}
+	    )
+	</insert>
+	
+	<update id="modifyProduct" parameterType="Admin01ProductDto">
+	    UPDATE travel_product
+	    SET
+	        region_id = #{regionId},
+	        theme_code = #{themeCode},
+	        product_name = #{productName},
+	        description = #{description},
+	        price = #{price},
+	        mod_date = SYSDATE
+	    WHERE product_id = #{productId}
+	</update>
+	
+	<update id="upsertProductImage" parameterType="ProductImageDto">
+	    MERGE INTO product_image pi
+	    USING (
+	        SELECT
+	            #{productId} AS product_id,
+	            #{imgOrder} AS img_order
+	        FROM dual
+	    ) src
+	    ON (
+	        pi.product_id = src.product_id
+	        AND pi.img_order = src.img_order
+	    )
+	    WHEN MATCHED THEN
+	        UPDATE SET
+	            pi.image_name = #{imageName}
+	    WHEN NOT MATCHED THEN
+	        INSERT (
+	            image_id,
+	            product_id,
+	            image_name,
+	            img_order
+	        ) VALUES (
+	            product_image_seq.NEXTVAL,
+	            #{productId},
+	            #{imageName},
+	            #{imgOrder}
+	        )
+	</update>
+	
+	<update id="modifyProductSchedule"
+	        parameterType="ProductScheduleDto">
+	    UPDATE product_schedule
+	    SET
+	        title = #{title},
+	        content = #{content},
+	        start_date = #{startDate},
+	        end_date = #{endDate},
+	        max_headcount = #{maxHeadcount}
+	    WHERE schedule_id = #{scheduleId}
+	      AND product_id = #{productId}
+	</update>
+	
+	<select id="productList" resultType="Admin01ProductDto">
+	    SELECT
+	        p.product_id AS productId,
+	        p.region_id AS regionId,
+	        p.theme_code AS themeCode,
+	        p.product_name AS productName,
+	        p.description AS description,
+	        p.price AS price,
+	        pi.image_name AS imageName
+	    FROM travel_product p
+	    LEFT JOIN product_image pi
+	      ON p.product_id = pi.product_id
+	     AND pi.img_order = 1
+	    ORDER BY p.product_id DESC
+	</select>
+	
+	<select id="productDetail"
+	        parameterType="long"
+	        resultType="Admin01ProductDto">
+	    SELECT
+	        p.product_id AS productId,
+	        p.region_id AS regionId,
+	        p.theme_code AS themeCode,
+	        p.product_name AS productName,
+	        p.description AS description,
+	        p.price AS price,
+	        pi.image_name AS imageName
+	    FROM travel_product p
+	    LEFT JOIN product_image pi
+	      ON p.product_id = pi.product_id
+	     AND pi.img_order = 1
+	    WHERE p.product_id = #{productId}
+	</select>
+	
+	<select id="scheduleList" parameterType="long" resultType="ProductScheduleDto">
+	    SELECT
+	        schedule_id AS scheduleId,
+	        product_id AS productId,
+	        title AS title,
+	        content AS content,
+	        start_date AS startDate,
+	        end_date AS endDate,
+	        max_headcount AS maxHeadcount,
+	        status AS status
+	    FROM product_schedule
+	    WHERE product_id = #{productId}
+	    ORDER BY start_date ASC, schedule_id ASC
+	</select>
+	
+	<select id="regionList" resultType="StatusTypeDto">
+	    SELECT
+	        bcode AS bcode,
+	        mcode AS mcode,
+	        code_contents AS codeContents
+	    FROM status_type
+	    WHERE bcode = 510
+	      AND mcode != 999
+	    ORDER BY mcode
+	</select>
+	
+	<select id="themeList" resultType="ThemeDto">
+	    SELECT
+	        theme_code AS themeCode,
+	        theme_name AS themeName
+	    FROM theme
+	    ORDER BY theme_code
+	</select>
+	
+</mapper>

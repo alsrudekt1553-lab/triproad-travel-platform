@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+	<typeAliases>
+		<typeAlias alias="TodoDTO" 		      type="com.oracle.tripRoad.dto.TodoDTO"/>
+		<typeAlias alias="Admin01BookingDto"  type="com.oracle.tripRoad.dto.admin01.Admin01BookingDto"/>
+		<typeAlias alias="Admin01ProductDto"  type="com.oracle.tripRoad.dto.admin01.Admin01ProductDto"/>
+		<typeAlias alias="EmailVerificationDto" type="com.oracle.tripRoad.dto.emailVerification.EmailVerificationDto"/>
+		<typeAlias alias="ProductImageDto"    type="com.oracle.tripRoad.dto.productImage.ProductImageDto"/>
+		<typeAlias alias="ProductScheduleDto" type="com.oracle.tripRoad.dto.productSchedule.ProductScheduleDto"/>
+		<typeAlias alias="StatusTypeDto"      type="com.oracle.tripRoad.dto.statusType.StatusTypeDto"/>
+		<typeAlias alias="ThemeDto"           type="com.oracle.tripRoad.dto.theme.ThemeDto"/>
+		<typeAlias alias="User01Dto"          type="com.oracle.tripRoad.dto.user01.User01Dto"/>
+	</typeAliases>
+</configuration>

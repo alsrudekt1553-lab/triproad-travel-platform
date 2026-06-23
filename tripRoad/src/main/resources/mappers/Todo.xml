@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.oracle.tripRoad.TodoMapper">
+
+	<select id="todoTotal" resultType="int">
+		SELECT Count(*) FROM tbl_todo
+	</select>
+
+	<select id="tkTodoListAll" parameterType="TodoDTO" resultType="TodoDTO">
+		<![CDATA[
+		SELECT *
+		FROM
+		(
+		        SELECT rownum rn , a.*
+		        FROM
+		                   (select * from tbl_todo order by tno) a
+		 )   
+		 WHERE  rn >= #{start} 
+	 	 and    rn <= #{end} 
+	 	]]>
+	 	 
+	</select>
+	
+	<select id="tkTodoListAll3" parameterType="TodoDTO" resultType="TodoDTO">
+		SELECT *
+		FROM
+		(
+		        SELECT rownum rn , a.*
+		        FROM
+		                   (select * from tbl_todo order by tno) a
+		 )   
+ 		WHERE  rn BETWEEN #{start} and #{end} 
+	</select>
+
+</mapper>
