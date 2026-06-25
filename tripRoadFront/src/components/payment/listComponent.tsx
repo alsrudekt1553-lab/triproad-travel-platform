@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import { getPaymentsByUser } from "../../api/paymentApi";
-import { getCurrentUserId } from "../../api/user01Api";
+import { getCurrentUserId } from "../../api/sessionHelper";
 
-// PayStatus 코드 → 한글 라벨
-// 백 PayStatus: READY(100), APPROVED(500), CANCELLED(900)
 const statusLabel = (status: number) => {
   if (status === 100) return "미승인";
   if (status === 500) return "결제완료";
@@ -11,8 +10,19 @@ const statusLabel = (status: number) => {
   return `상태 ${status}`;
 };
 
-// 날짜 포맷 (YYYY-MM-DD HH:mm)
-const formatDate = (dateStr: string) => {
+const statusBorderClass = (status: number) => {
+  if (status === 500) return "border-l-[3px] border-l-black";
+  if (status === 100) return "border-l-[3px] border-l-grey-5";
+  return "border-l-[3px] border-l-grey-2";
+};
+
+const statusTextClass = (status: number) => {
+  if (status === 500) return "text-black font-medium";
+  if (status === 100) return "text-grey-8 font-medium";
+  return "text-grey-5";
+};
+
+const formatDateTime = (dateStr: string) => {
   if (!dateStr) return "-";
   const d    = new Date(dateStr);
   const yyyy = d.getFullYear();
@@ -20,28 +30,17 @@ const formatDate = (dateStr: string) => {
   const dd   = String(d.getDate()).padStart(2, "0");
   const hh   = String(d.getHours()).padStart(2, "0");
   const min  = String(d.getMinutes()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+  return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
 };
 
-// TID 부분 표시 (앞 12자리만)
-// 카카오 거래번호는 30자 — 카드에 그대로 박으면 줄바꿈 발생 → 앞부분만 노출
 const shortTid = (tid: string) => {
   if (!tid) return "-";
   return tid.length > 12 ? `${tid.substring(0, 12)}...` : tid;
 };
 
-// ============================================================
-// 마이페이지 — 회원별 결제 내역 조회
-// API: GET /api/payment/user/{userId}
-// 백이 승인일 최신순으로 정렬해서 내려줌 (findByUserIdOrderByApprovedAtDesc)
-//
-// v2 자리:
-//   - 환불 신청 버튼 (APPROVED 상태) → postRefund(bookingId) 호출
-//     현재 미구현 — 백 POST /api/payment/refund/{bookingId} v1 구현 완료
-//     마이페이지 환불 UI 도입 시 아래 주석 영역 활성화
-// ============================================================
 function ListComponent() {
-  const userId = getCurrentUserId();
+  const userId   = getCurrentUserId();
+  const navigate = useNavigate();
 
   const [payments, setPayments] = useState<PaymentInfo[]>([]);
   const [loading,  setLoading]  = useState<boolean>(true);
@@ -65,100 +64,95 @@ function ListComponent() {
     loadPayments();
   }, [userId]);
 
-  // ── 렌더링 ───────────────────────────────────────────────
+  const handleCardClick = (bookingId: number) => {
+    navigate(`/booking/detail/${bookingId}`);
+  };
+
   if (loading) {
     return (
-      <div className="px-4 py-6 text-[14px] text-grey-5 font-sans tracking-tight-kr">
-        로딩 중...
+      <div className="w-full font-sans tracking-tight-kr">
+        <div className="bg-black text-white">
+          <div className="px-6 py-5 text-[19px] font-semibold tracking-tight-kr text-center md:text-left">
+            결제 내역
+          </div>
+        </div>
+        <div className="max-w-[520px] mx-auto px-6 py-8 text-[14px] text-grey-5">로딩 중...</div>
       </div>
     );
   }
 
   if (payments.length === 0) {
     return (
-      <div className="px-4 py-6 text-[14px] text-grey-5 font-sans tracking-tight-kr">
-        결제 내역이 없습니다.
+      <div className="w-full font-sans tracking-tight-kr">
+        <div className="bg-black text-white">
+          <div className="px-6 py-5 text-[19px] font-semibold tracking-tight-kr text-center md:text-left">
+            결제 내역
+          </div>
+        </div>
+        <div className="max-w-[520px] mx-auto px-6 py-8 text-[14px] text-grey-5">결제 내역이 없습니다.</div>
       </div>
     );
   }
 
   return (
-    <div className="font-sans tracking-tight-kr">
-      <div className="flex flex-col gap-3 p-4">
-        {payments.map((p) => (
-          <div
-            key={p.paymentId}
-            className="border border-grey-2 bg-white"
-          >
-            {/* 카드 헤더 */}
-            <div className="px-5 pt-4 pb-3 border-b border-grey-1
-              flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-[16px] font-semibold text-black">
-                  #{p.paymentId}
-                </span>
-                <span className="text-[13px] text-grey-5">
-                  예약 {p.bookingId}
-                </span>
+    <div className="w-full font-sans tracking-tight-kr">
+      <div className="bg-black text-white">
+        <div className="px-6 py-5 text-[19px] font-semibold tracking-tight-kr text-center md:text-left">
+          결제 내역
+        </div>
+      </div>
+
+      <div className="max-w-[520px] mx-auto">
+        <div className="flex flex-col px-4 pt-10 pb-4">
+          {payments.map((p) => {
+            const isCancelled = p.payStatus === 900;
+            return (
+              <div
+                key={p.paymentId}
+                onClick={() => handleCardClick(p.bookingId)}
+                className={`mb-8 cursor-pointer transition-colors bg-white border border-grey-2
+                  ${statusBorderClass(p.payStatus)}
+                  ${isCancelled ? "opacity-[0.55]" : "hover:border-grey-5"}`}
+              >
+                <div className="px-5 py-3 border-b border-grey-2 flex items-center justify-between gap-2 tracking-tight-kr">
+                  <span className="text-[12px] text-grey-5">
+                    <span>결제 </span>
+                    <span className="font-medium" style={{ fontFamily: "monospace" }}>{p.paymentId}</span>
+                    <span className="inline-block w-[10px]" />
+                    <span>예약 </span>
+                    <span className="font-medium" style={{ fontFamily: "monospace" }}>{p.bookingId}</span>
+                  </span>
+                  <span className={`text-[18px] leading-none ${isCancelled ? "text-grey-5" : "text-grey-7"}`} aria-hidden="true">›</span>
+                </div>
+
+                <div className="px-5 pt-4 pb-4">
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <div className={`text-[16px] font-semibold leading-snug flex-1 min-w-0 ${isCancelled ? "text-grey-5" : "text-black"}`}>
+                      카카오페이 결제
+                    </div>
+                    <div className={`text-[12px] whitespace-nowrap tracking-tight-kr ${isCancelled ? "text-grey-7 font-medium px-1.5 py-0.5 bg-grey-2" : statusTextClass(p.payStatus)}`}>
+                      {statusLabel(p.payStatus)}
+                    </div>
+                  </div>
+                  <div className={`text-[13px] tracking-tight-kr ${isCancelled ? "text-grey-5" : "text-grey-7"}`}>
+                    {formatDateTime(p.approvedAt)}
+                    {p.tid && <> · 거래 <span style={{ fontFamily: "monospace" }}>{shortTid(p.tid)}</span></>}
+                  </div>
+                </div>
+
+                <div className="px-5 py-3.5 border-t border-grey-2 flex justify-between items-baseline gap-2">
+                  <span className="text-[12px] text-grey-5 tracking-tight-num" style={{ opacity: 0.7 }}>
+                    결제 금액
+                  </span>
+                  <span className={`text-[20px] tracking-tight-num whitespace-nowrap font-semibold ${isCancelled ? "text-grey-5" : "text-black"}`}>
+                    {p.amount.toLocaleString()}원
+                  </span>
+                </div>
+
               </div>
-
-              {/* 상태 — 색 없이 굵기로만 구분 */}
-              <span className={`text-[13px] tracking-tight-kr
-                ${p.payStatus === 500 ? "font-semibold text-black" : ""}
-                ${p.payStatus === 100 ? "font-medium text-grey-8" : ""}
-                ${p.payStatus === 900 ? "font-normal text-grey-4" : ""}
-              `}>
-                {statusLabel(p.payStatus)}
-              </span>
-            </div>
-
-            {/* 카드 바디 */}
-            <div className="px-5 py-3">
-              <table className="w-full text-[13px]">
-                <tbody>
-                  <tr>
-                    <td className="py-1 text-grey-5 w-5/12">결제 금액</td>
-                    <td className="py-1 text-black font-semibold text-right tracking-tight-num">
-                      {p.amount.toLocaleString()}원
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="py-1 text-grey-5">승인 일시</td>
-                    <td className="py-1 text-grey-8 text-right">
-                      {formatDate(p.approvedAt)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="py-1 pb-3 text-grey-5">거래번호</td>
-                    <td className="py-1 pb-3 text-grey-8 text-right">
-                      {shortTid(p.tid)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              {/* ============================================================ */}
-              {/* v2 자리 — 환불 신청 버튼                                      */}
-              {/* 백 POST /api/payment/refund/{bookingId} v1 구현 완료          */}
-              {/* 마이페이지 환불 UI 도입 시 아래 주석 해제                      */}
-              {/*                                                               */}
-              {/* {p.payStatus === 500 && (                                     */}
-              {/*   <button                                                      */}
-              {/*     type="button"                                              */}
-              {/*     onClick={() => postRefund(p.bookingId)}                   */}
-              {/*     style={{ borderRadius: 0 }}                               */}
-              {/*     className="w-full mt-2 py-2.5 border border-black         */}
-              {/*       text-[13px] font-semibold text-black tracking-tight-kr  */}
-              {/*       hover:bg-hc-red hover:border-hc-red hover:text-white     */}
-              {/*       transition-colors"                                       */}
-              {/*   >                                                            */}
-              {/*     환불 신청                                                   */}
-              {/*   </button>                                                    */}
-              {/* )}                                                             */}
-              {/* ============================================================ */}
-            </div>
-          </div>
-        ))}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

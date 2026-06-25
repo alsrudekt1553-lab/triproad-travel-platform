@@ -11,6 +11,10 @@ export const deleteWishlist = (wishlistId: number) => {
     return axios.delete(`${host}/wishlist/${wishlistId}`);
 };
 
+export const toggleWishlist = (data: { userId: number; productId: number }) => {
+    return axios.post(`${host}/wishlist`, data);
+};
+
 export const getChecklists = (userId: number) => {
     return axios.get(`${host}/${userId}/checklists`);
 };
@@ -80,4 +84,22 @@ export const updateUser = async (
     );
 
     return res.data;
+};
+
+export const changePassword = async (
+	currentPassword: string,
+	newPassword: string
+) => {
+	const res = await axios.put(
+		`${userHost}/password-change`,
+		{
+			currentPassword,
+			newPassword,
+		},
+		{
+			withCredentials: true,
+		}
+	);
+
+	return res.data;
 };

@@ -86,7 +86,13 @@ function LoginComponent() {
 
     useEffect(() => {
         if (state.result === 1) {
-            navigate({ pathname: "/" })
+            const redirect =
+                new URLSearchParams(window.location.search)
+                    .get("redirect")
+
+            navigate(redirect || "/", {
+                replace: true
+            })
         }
     }, [state.result, navigate])
 

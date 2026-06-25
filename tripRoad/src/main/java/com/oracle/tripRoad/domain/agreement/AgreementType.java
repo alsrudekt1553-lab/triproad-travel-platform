@@ -16,11 +16,19 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(of = "agreementId")
 public class AgreementType {
 
+    public static final int TYPE_SIGNUP    = 100;
+    public static final int TYPE_PAYMENT   = 200;
+    public static final int TYPE_PRODUCT   = 300;
+    public static final int TYPE_OPERATION = 400;
 
-    public static final int TYPE_PRIVACY       = 100;   // 개인정보 수집·이용
-    public static final int TYPE_THIRD_PARTY   = 200;   // 제3자 정보 제공
-    public static final int TYPE_PAYMENT_AGENT = 300;   // 결제대행 서비스
-    public static final int TYPE_MARKETING     = 400;   // 마케팅 정보 수신 (선택, v2)
+    public static final String SCOPE_COMMON  = "COMMON";
+    public static final String SCOPE_PRODUCT = "PRODUCT";
+
+    public static final int STATUS_ACTIVE   = 100;  
+    public static final int STATUS_INACTIVE = 900;  
+
+    public static final int REQUIRED_YES = 1;
+    public static final int REQUIRED_NO  = 0;
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "AGREEMENT_TYPE_SEQ_GENERATOR")
@@ -29,14 +37,18 @@ public class AgreementType {
             sequenceName = "AGREEMENT_TYPE_SEQ",
             allocationSize = 1
     )
-    @Column(name = "AGREEMENT_ID")
+    @Column(name = "AGREEMENT_ID", precision = 19)
     private Long agreementId;
 
 
     @Column(name = "TYPE_CODE", nullable = false)
-    private int typeCode;
+    private Integer typeCode;
 
- 
+
+    @Column(name = "SCOPE", nullable = false, length = 20)
+    private String scope;
+
+
     @Column(name = "VERSION", nullable = false, length = 10)
     private String version;
 
@@ -47,17 +59,21 @@ public class AgreementType {
     @Column(name = "CONTENT")
     private String content;
 
- 
-    @Column(name = "IS_REQUIRED")
+
+    @Column(name = "IS_REQUIRED", nullable = false)
     private Integer isRequired;
 
- 
+
     @Column(name = "EFFECTIVE_FROM", nullable = false)
     private LocalDate effectiveFrom;
 
-  
+
     @Column(name = "EFFECTIVE_TO")
     private LocalDate effectiveTo;
+
+
+    @Column(name = "STATUS", nullable = false)
+    private Integer status;
 
     @Column(name = "CREATED_AT", updatable = false)
     private LocalDateTime createdAt;
@@ -67,9 +83,12 @@ public class AgreementType {
         if (this.createdAt == null) {
             this.createdAt = LocalDateTime.now();
         }
+        if (this.status == null) {
+            this.status = STATUS_ACTIVE;
+        }
     }
 
- 
+
     public boolean isEffectiveAt(LocalDate date) {
         if (effectiveFrom.isAfter(date)) {
             return false;
@@ -77,8 +96,25 @@ public class AgreementType {
         return effectiveTo == null || !effectiveTo.isBefore(date);
     }
 
- 
+
+    public boolean isApplicable(LocalDate date) {
+        return this.status != null
+                && this.status == STATUS_ACTIVE
+                && isEffectiveAt(date);
+    }
+
+
     public boolean isRequired() {
-        return this.isRequired != null && this.isRequired == 1;
+        return this.isRequired != null && this.isRequired == REQUIRED_YES;
+    }
+
+
+    public boolean isCommonScope() {
+        return SCOPE_COMMON.equals(this.scope);
+    }
+
+
+    public boolean isProductScope() {
+        return SCOPE_PRODUCT.equals(this.scope);
     }
 }

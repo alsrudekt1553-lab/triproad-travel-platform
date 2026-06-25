@@ -13,9 +13,9 @@ spring:
   #Datasource Bean 생성
   datasource:
     driver-class-name: oracle.jdbc.driver.OracleDriver
-    url: jdbc:oracle:thin:@172.30.1.16:1521/xe
-    username: tripRoad
-    password: tiger
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 
   # View Resolver -->  X
 
@@ -41,15 +41,15 @@ com.oracle.tripRoad.upload.path: upload
 spring.mail:
   host: smtp.gmail.com
   port: 587
-  username: tripRoad999@gmail.com
-  password: 'veon plvb jahw nrqk'
+  username: ${MAIL_USERNAME}
+  password: ${MAIL_PASSWORD}
   properties:
     mail.smtp.auth: true
     mail.smtp.starttls.enable: true
 
 # KakaoPay
 kakaopay:
-  secret-key: DEV_SECRET_KEY_본인키
+  secret-key: ${KAKAOPAY_SECRET_KEY}
   cid: TC0ONETIME
   ready-url: https://open-api.kakaopay.com/online/v1/payment/ready
   approve-url: https://open-api.kakaopay.com/online/v1/payment/approve

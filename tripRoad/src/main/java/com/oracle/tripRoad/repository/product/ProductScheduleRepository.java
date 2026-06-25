@@ -27,4 +27,7 @@ public interface ProductScheduleRepository extends JpaRepository<ProductSchedule
     // booking 담당자 파트 
     @Query("SELECT s FROM ProductSchedule s JOIN FETCH s.product WHERE s.scheduleId = :scheduleId")
     Optional<ProductSchedule> findByIdFetchProduct(@Param("scheduleId") Long scheduleId);
+    
+    @Query("SELECT s FROM ProductSchedule s JOIN FETCH s.product WHERE s.scheduleId IN :scheduleIds")
+    List<ProductSchedule> findAllByScheduleIdInFetchProduct(@Param("scheduleIds") List<Long> scheduleIds);
 }

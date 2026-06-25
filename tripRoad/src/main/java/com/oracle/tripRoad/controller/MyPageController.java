@@ -1,6 +1,7 @@
 package com.oracle.tripRoad.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,6 +40,12 @@ public class MyPageController {
 	public void deleteWishlist(@PathVariable("wishlistId") Long wishlistId) {
 	    myPageService.deleteWishlist(wishlistId);
 	}
+	    @PostMapping("/wishlist")
+	    public WishlistDto toggleWishlist(@RequestBody Map<String, Long> body) {
+	        return myPageService.toggleWishlist(body.get("userId"), body.get("productId"));
+	    }
+
+	
 	
 	@GetMapping("/{userId}/checklists")
 	public List<Checklist> getChecklists(@PathVariable("userId") Long userId) {

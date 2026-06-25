@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { API_SERVER_HOST } from "../../api/apiConfig";
 import {
     getBookingsByUser,
     getScheduleForBooking,
 } from "../../api/myPageBookingApi";
+import { formatDate } from "../../utils/dateFormat";
 
 type BookingListPageProps = {
     userId: number;
@@ -104,24 +106,32 @@ function BookingListPage({ userId }: BookingListPageProps) {
 
  
     return (
-        <div className="bg-white border rounded-lg p-6">
-            <h2 className="text-2xl font-bold mb-6">예약 내역</h2>
+        <div className="border border-neutral-200 bg-white p-6 shadow-sm">
+            <div className="mb-6">
+                <h2 className="text-xl font-extrabold text-neutral-900">
+                    예약 내역
+                </h2>
+
+                <p className="mt-1 text-sm text-neutral-500">
+                    예약한 여행 일정과 결제 정보를 확인할 수 있습니다.
+                </p>
+            </div>
 
             <div className="space-y-4">
                 {bookings.map((booking) => (
                     <div
                         key={booking.bookingId}
-                        className="flex items-center border rounded-lg p-4 hover:bg-gray-50"
+                        className="flex flex-col gap-4 border border-neutral-200 p-4 transition hover:border-sky-300 hover:bg-sky-50/30 md:flex-row md:items-center"
                     >
-                        <div className="w-28 h-20 bg-gray-200 rounded-lg flex items-center justify-center mr-5 overflow-hidden">
+                        <div className="flex h-36 w-full shrink-0 items-center justify-center overflow-hidden bg-neutral-100 text-sm text-neutral-400 md:mr-5 md:h-20 md:w-28">
                             {booking.imageName ? (
                                 <img
-                                    src={`http://localhost:8587/api/products/view/${booking.imageName}`}
+                                    src={`${API_SERVER_HOST}/api/products/view/${booking.imageName}`}
                                     alt="상품 이미지"
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                <span>사진</span>
+                                <span>이미지 없음</span>
                             )}
                         </div>
 
@@ -149,17 +159,17 @@ function BookingListPage({ userId }: BookingListPageProps) {
                             <p>이메일: {booking.reserverEmail}</p>
                         </div>
 
-                        <div className="ml-auto flex gap-2">
+                        <div className="flex w-full gap-2 md:ml-auto md:w-auto">
                             <button
                                 onClick={() => handleBookingInfo(booking)}
-                                className="border rounded px-4 py-2 hover:bg-blue-50"
+                                className="flex-1 border border-sky-700 bg-white px-4 py-2 text-sm font-bold text-sky-700 transition hover:bg-sky-50 md:flex-none"
                             >
                                 예약 정보
                             </button>
 
                             <button
                                 onClick={() => handleProductDetail(booking.scheduleId)}
-                                className="border rounded px-4 py-2 hover:bg-blue-50"
+                                className="flex-1 border border-sky-700 bg-white px-4 py-2 text-sm font-bold text-sky-700 transition hover:bg-sky-50 md:flex-none"
                             >   
                                 상품 상세
                             </button>
@@ -170,14 +180,17 @@ function BookingListPage({ userId }: BookingListPageProps) {
 
             {selectedBooking && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 w-[500px] shadow-lg">
-                        <h3 className="text-xl font-bold mb-4">예약 정보</h3>
+                    <div className="mx-4 w-full max-w-[500px] bg-white p-6 shadow-xl">
+                        <h3 className="mb-4 text-xl font-extrabold text-neutral-900">
+                            예약 정보
+                        </h3>
 
                         <div className="space-y-2">
                             <p>예약번호: {selectedBooking.bookingId}</p>
                             <p>상품명: {selectedBooking.productName}</p>
                             <p>
-                                여행일: {selectedBooking.startDate} ~ {selectedBooking.endDate}
+                                여행일: {formatDate(selectedBooking.startDate)} ~{" "}
+                                       {formatDate(selectedBooking.endDate)}
                             </p>
                             <p>예약자: {selectedBooking.reserverName}</p>
                             <p>연락처: {selectedBooking.reserverPhone}</p>

@@ -13,7 +13,6 @@ public class PaymentDto {
         private Long bookingId;
         private Long userId;
         private Long scheduleId;
-        
         private String itemName;
         private Long amount;
         private String approvalUrl;
@@ -26,14 +25,14 @@ public class PaymentDto {
         private String tid;
         private String nextRedirectPcUrl;
         private String nextRedirectMobileUrl;
-        private Long partnerOrderId; 
+        private Long partnerOrderId;
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class ApproveRequest {
         private String tid;
         private String pgToken;
-        private Long partnerOrderId; 
+        private Long partnerOrderId;
         private Long userId;
     }
 
@@ -57,3 +56,4 @@ public class PaymentDto {
         private LocalDateTime approvedAt;
     }
 }
+

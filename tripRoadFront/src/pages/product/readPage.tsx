@@ -9,7 +9,7 @@ function ReadPage() {
     if (!productId) return <Navigate to="/product/list" />;
 
     return (
-        <div className="bg-white w-full">
+        <div className="w-full bg-[#faf8f3] pb-8">
             <ReadComponent productId={Number(productId)} />
         </div>
     );

@@ -9,7 +9,6 @@ import java.time.LocalDateTime;
 
 public class UserPointDto {
 
-   
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class Balance {
         private Long          userId;
@@ -17,19 +16,21 @@ public class UserPointDto {
         private LocalDateTime updatedAt;
     }
 
-    
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class History {
-        private Long          userPointHistoryId;
+        private Long          historyId;
         private Long          userId;
         private Long          bookingId;
+        private Long          ledgerId;       
         private int           pointAmount;
         private int           pointBalanceAfter;
-        private int           historyType;
+        private int           historyType;     
+        private String        relatedType;     
+        private Long          relatedId;       
+        private Long          scheduleId;     
         private LocalDateTime createdAt;
     }
 
-    
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class UseRequest {
         private Long userId;
@@ -37,7 +38,6 @@ public class UserPointDto {
         private Long bookingId;
     }
 
-    
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class RefundRequest {
         private Long userId;

@@ -78,9 +78,6 @@ function ProductListPage() {
           <h2 className="text-2xl font-extrabold text-neutral-900">
             상품 목록
           </h2>
-          <p className="mt-1 text-sm text-neutral-500">
-            등록된 여행 패키지 상품과 일정을 관리합니다.
-          </p>
         </div>
 
         <div className="text-sm font-semibold text-neutral-500">

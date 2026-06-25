@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 public class BookingScheduleViewDto {
 
     private Long      scheduleId;
+    private Long      productId;		
     private String    productName;
     private Long      unitPrice;
     private LocalDate startDate;

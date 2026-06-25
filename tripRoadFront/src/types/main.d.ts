@@ -11,6 +11,7 @@ interface MainProduct {
   regionId: number
   regionName?: string
   imageName?: string
+  averageRating?: number | null
 }
 
 interface MainHome {

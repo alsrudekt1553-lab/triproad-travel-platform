@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { updateUser } from "../../api/myPageApi";
+import { formatDate } from "../../utils/dateFormat";
 
 type UserInfo = {
     userId: number;
@@ -24,9 +25,7 @@ function ProfileEditPage({ user }: ProfileEditPageProps) {
         email: user.email,
         createdAt: user.createdAt || "",
         nickname: user.nickname,
-        phone: user.phone || "",
-        password: "",
-        passwordConfirm: "",
+        phone: user.phone || ""
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,10 +38,6 @@ function ProfileEditPage({ user }: ProfileEditPageProps) {
     };
 
     const handleSubmit = async () => {
-        if (form.password !== form.passwordConfirm) {
-            alert("비밀번호가 일치하지 않습니다.");
-            return;
-        }
 
         try {
             const formData = new FormData();
@@ -54,10 +49,6 @@ function ProfileEditPage({ user }: ProfileEditPageProps) {
 
             if (profileFile) {
                 formData.append("files", profileFile);
-            }
-
-            if (form.password.trim() !== "") {
-                formData.append("password", form.password);
             }
 
             for (const pair of formData.entries()) {
@@ -74,8 +65,16 @@ function ProfileEditPage({ user }: ProfileEditPageProps) {
     };
 
     return (
-        <div className="bg-white border rounded-lg p-6">
-            <h2 className="text-2xl font-bold mb-6">회원정보 수정</h2>
+        <div className="border border-neutral-200 bg-white p-6 shadow-sm">
+            <div className="mb-6">
+                <h2 className="text-xl font-extrabold text-neutral-900">
+                    회원정보 수정
+                </h2>
+
+                <p className="mt-1 text-sm text-neutral-500">
+                    프로필 이미지와 회원 정보를 관리할 수 있습니다.
+                </p>
+            </div>
 
             <section className="border-b pb-5 mb-5">
                 <h3 className="text-lg font-bold mb-4">기본 정보</h3>
@@ -93,7 +92,7 @@ function ProfileEditPage({ user }: ProfileEditPageProps) {
 
                     <div className="flex">
                         <span className="w-32 font-bold">가입일</span>
-                        <span>{form.createdAt}</span>
+                        <span>{formatDate(form.createdAt)}</span>
                     </div>
                 </div>
             </section>
@@ -128,7 +127,7 @@ function ProfileEditPage({ user }: ProfileEditPageProps) {
                             name="nickname"
                             value={form.nickname}
                             onChange={handleChange}
-                            className="w-full border rounded px-3 py-2"
+                            className="h-11 w-full border border-neutral-300 bg-white px-4 text-sm outline-none transition focus:border-sky-600 focus:ring-2 focus:ring-sky-100"
                         />
                     </div>
 
@@ -139,18 +138,13 @@ function ProfileEditPage({ user }: ProfileEditPageProps) {
                             name="phone"
                             value={form.phone}
                             onChange={handleChange}
-                            className="w-full border rounded px-3 py-2"
+                            className="h-11 w-full border border-neutral-300 bg-white px-4 text-sm outline-none transition focus:border-sky-600 focus:ring-2 focus:ring-sky-100"
                         />
-                    </div>
-                    
-                    <div className="text-sm text-gray-500">
-                        비밀번호 변경은 로그인 화면의
-                        "비밀번호 찾기" 기능을 이용해주세요.
                     </div>
 
                     <button
                         onClick={handleSubmit}
-                        className="bg-blue-500 text-white rounded px-6 py-2 hover:bg-blue-600"
+                        className="rounded-full bg-sky-700 px-6 py-3 text-sm font-bold text-white transition hover:bg-sky-800"
                     >
                         수정하기
                     </button>

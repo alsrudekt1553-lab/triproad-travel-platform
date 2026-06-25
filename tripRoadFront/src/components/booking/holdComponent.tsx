@@ -1,41 +1,77 @@
-import { useState } from "react";
-import { useParams, useLocation } from "react-router";
+import { useState, useEffect } from "react";
+import { useParams, useLocation, useNavigate } from "react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { postHold, getScheduleForBooking } from "../../api/bookingApi";
 import { postReady } from "../../api/paymentApi";
 import { getBalance } from "../../api/pointApi";
 import { getCurrentAgreements } from "../../api/agreementApi";
-import { getCurrentUserId } from "../../api/user01Api";
+import { getCurrentUserId } from "../../api/sessionHelper";
 
-// ============================================================
-// holdComponent — 예약 + 결제 단일 화면 (UX Plan D)
-//
-// 진입 경로: /booking/hold/:scheduleId
-// 상품 상세에서 navigate state로 productName/unitPrice/departureDate 전달 가능
-//   → 없어도 동작 (백 schedule 응답이 동일 정보 제공)
-//   → 있으면 로딩 이전 placeholder로 미리 노출
-//
-// 결제 흐름:
-//   1. POST /api/booking/hold    → bookingId, finalPrice
-//   2. POST /api/payment/ready   → tid, redirectUrl
-//   3. sessionStorage.setItem(`payment_${bookingId}`, ...)
-//   4. window.location = redirectUrl (PC/모바일 분기)
-// ============================================================
+const DEBUG_KEYWORDS = [
+  "LEDGER",
+  "정합성",
+  "userId=",
+  "Exception",
+  "stack",
+  "Trace",
+  "SQLException",
+  "rollback",
+];
+
+const extractFriendlyMessage = (err: unknown, defaultMsg: string): string => {
+  console.error("[Booking] 에러 상세:", err);
+
+  if (!axios.isAxiosError(err) || !err.response?.data) {
+    return defaultMsg;
+  }
+
+  const data = err.response.data;
+
+  let candidate: string | null = null;
+
+  if (typeof data === "object" && data !== null && "message" in data) {
+    const message = (data as { message?: unknown }).message;
+    if (typeof message === "string" && message.length > 0 && message.length < 200) {
+      candidate = message;
+    }
+  } else if (typeof data === "string" && data.length > 0 && data.length < 200) {
+    candidate = data;
+  }
+
+  if (!candidate) return defaultMsg;
+
+  const hasDebugKeyword = DEBUG_KEYWORDS.some((kw) => candidate!.includes(kw));
+  if (hasDebugKeyword) {
+    console.warn("[Booking] 디버그 메시지 차단됨 (사용자 보호):", candidate);
+    return defaultMsg;
+  }
+
+  return candidate;
+};
 
 function HoldComponent() {
   const { scheduleId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const userId = getCurrentUserId();
 
-  // 상품 상세에서 전달된 state (없어도 동작)
+  useEffect(() => {
+    if (!userId) {
+      alert("로그인이 필요한 서비스입니다.");
+      navigate(
+        `/user01/login?redirect=${encodeURIComponent(`/booking/hold/${scheduleId}`)}`,
+        { replace: true }
+      );
+    }
+  }, [userId, scheduleId, navigate]);
+
   const locationState = location.state as {
     productName?: string;
     unitPrice?: number;
     departureDate?: string;
   } | null;
 
-  // ── 사용자 입력 state ─────────────────────────────────────
   const [reserverName,  setReserverName]  = useState("");
   const [reserverPhone, setReserverPhone] = useState("");
   const [reserverEmail, setReserverEmail] = useState("");
@@ -44,12 +80,8 @@ function HoldComponent() {
   const [agreedIds,     setAgreedIds]     = useState<Set<number>>(new Set());
   const [fieldErrors,   setFieldErrors]   = useState<Record<string, string>>({});
 
-  // 약관 내용보기 모달
   const [modalContent, setModalContent] = useState<{ title: string; content: string } | null>(null);
 
-  // ── TanStack useQuery × 3 병렬 ───────────────────────────
-
-  // 1) 일정 + 잔여 인원
   const {
     data: schedule,
     isLoading: scheduleLoading,
@@ -57,27 +89,24 @@ function HoldComponent() {
   } = useQuery({
     queryKey: ["booking-schedule", scheduleId],
     queryFn: () => getScheduleForBooking(parseInt(scheduleId!)),
-    enabled: !!scheduleId,
+    enabled: !!scheduleId && !!userId,
   });
 
-  // 2) 적립금 잔액
   const { data: pointBalance } = useQuery({
     queryKey: ["point-balance", userId],
     queryFn: () => getBalance(userId),
     staleTime: 0,
+    enabled: !!userId,
   });
 
-  // 3) 약관 목록 (schedule 응답 후 productId 확정 시 호출)
-  // ※ 현재 BookingScheduleViewDto에 productId 없음
-  //   → scheduleId만으로 공통 약관 조회 (productId는 v2에서 추가 시 확장)
-  //   → 백 AgreementController: productId null이면 공통 약관(SCOPE=COMMON)만 반환
   const { data: agreements = [] } = useQuery({
-    queryKey: ["agreements", scheduleId],
-    queryFn: () => getCurrentAgreements(undefined, scheduleId ? parseInt(scheduleId) : undefined),
-    enabled: !!scheduleId,
+    queryKey: ["agreements", schedule?.productId, scheduleId],
+    queryFn: () => getCurrentAgreements(
+      schedule!.productId,
+      scheduleId ? parseInt(scheduleId) : undefined
+    ),
+    enabled: !!scheduleId && !!schedule?.productId && !!userId,
   });
-
-  // ── useMutation × 2 ──────────────────────────────────────
 
   const holdMutation = useMutation({
     mutationFn: (req: BookingHoldRequest) => postHold(req),
@@ -87,24 +116,27 @@ function HoldComponent() {
     mutationFn: (req: PaymentReadyRequest) => postReady(req),
   });
 
-  // ── 인원 +/- ─────────────────────────────────────────────
   const maxSelectable = schedule ? Math.min(schedule.remainingCount, 10) : 1;
   const dec = () => setHeadcount((h) => Math.max(1, h - 1));
   const inc = () => setHeadcount((h) => Math.min(maxSelectable, h + 1));
 
-  // ── 가격 계산 (프론트 미리보기 전용) ─────────────────────
-  // 실제 결제 amount는 백 holdResponse.finalPrice 그대로 사용
   const totalPrice    = schedule ? schedule.unitPrice * headcount : 0;
   const previewFinal  = Math.max(0, totalPrice - pointUsed);
 
-  // ── 적립금 검증 ──────────────────────────────────────────
   const maxPoint = Math.min(
     pointBalance?.pointBalance ?? 0,
     totalPrice
   );
 
-  // ── 약관 체크 헬퍼 ───────────────────────────────────────
-  const requiredAgreements = agreements.filter((a) => a.isRequired === 1);
+  const requiredList = agreements
+    .filter((a) => a.isRequired === 1)
+    .sort((x, y) => x.typeCode - y.typeCode);
+
+  const optionalList = agreements
+    .filter((a) => a.isRequired === 0)
+    .sort((x, y) => x.typeCode - y.typeCode);
+
+  const requiredAgreements = requiredList;
   const allRequired        = requiredAgreements.every((a) => agreedIds.has(a.agreementId));
   const allChecked         = agreements.length > 0 && agreements.every((a) => agreedIds.has(a.agreementId));
 
@@ -122,18 +154,43 @@ function HoldComponent() {
     });
   };
 
-  // ── 결제하기 클릭 ────────────────────────────────────────
+  const renderAgreementRow = (a: AgreementInfo) => (
+    <div key={a.agreementId} className="flex items-center gap-2 mb-2">
+      <input
+        type="checkbox"
+        id={`agree-${a.agreementId}`}
+        checked={agreedIds.has(a.agreementId)}
+        onChange={(e) => toggleOne(a.agreementId, e.target.checked)}
+        style={{ borderRadius: 0, width: 16, height: 16, accentColor: "#000" }}
+      />
+      <label
+        htmlFor={`agree-${a.agreementId}`}
+        className="flex-1 text-[13px] text-grey-8 cursor-pointer tracking-tight-kr"
+      >
+        <span className="text-grey-5 mr-1">
+          {a.isRequired === 1 ? "[필수]" : "[선택]"}
+        </span>
+        {a.title}
+      </label>
+      <button
+        type="button"
+        onClick={() => setModalContent({ title: a.title, content: a.content })}
+        className="text-[12px] text-black underline shrink-0 tracking-tight-kr"
+      >
+        내용보기
+      </button>
+    </div>
+  );
+
   const handlePay = async () => {
     if (!scheduleId || !schedule) return;
 
-    // 1) 필수 입력 검증
     const errors: Record<string, string> = {};
     if (!reserverName.trim())  errors.reserverName  = "이름을 입력해주세요.";
     if (!reserverPhone.trim()) errors.reserverPhone = "연락처를 입력해주세요.";
     if (!reserverEmail.trim()) errors.reserverEmail = "이메일을 입력해주세요.";
     if (pointUsed > maxPoint)  errors.pointUsed     = `사용 가능 한도를 초과했습니다. (최대 ${maxPoint.toLocaleString()}P)`;
 
-    // 2) 필수 약관 검증
     if (!allRequired) errors.agreements = "필수 약관에 동의해주세요.";
 
     if (Object.keys(errors).length > 0) {
@@ -142,7 +199,6 @@ function HoldComponent() {
     }
     setFieldErrors({});
 
-    // 3) holdMutation
     let holdRes: BookingHoldResponse;
     try {
       holdRes = await holdMutation.mutateAsync({
@@ -156,17 +212,14 @@ function HoldComponent() {
         agreementIds: Array.from(agreedIds),
       });
     } catch (err) {
-      let msg = "예약에 실패했습니다. 잠시 후 다시 시도해주세요.";
-      if (axios.isAxiosError(err) && err.response?.data) {
-        msg = typeof err.response.data === "string"
-          ? err.response.data
-          : JSON.stringify(err.response.data);
-      }
+      const msg = extractFriendlyMessage(
+        err,
+        "예약에 실패했습니다. 잠시 후 다시 시도해주세요."
+      );
       alert(msg);
       return;
     }
 
-    // 4) readyMutation
     const origin = window.location.origin;
     let readyRes: PaymentReadyResponse;
     try {
@@ -181,17 +234,14 @@ function HoldComponent() {
         failUrl:     `${origin}/payment/fail/${holdRes.bookingId}`,
       });
     } catch (err) {
-      let msg = "결제 준비에 실패했습니다. 잠시 후 다시 시도해주세요.";
-      if (axios.isAxiosError(err) && err.response?.data) {
-        msg = typeof err.response.data === "string"
-          ? err.response.data
-          : JSON.stringify(err.response.data);
-      }
+      const msg = extractFriendlyMessage(
+        err,
+        "결제 준비에 실패했습니다. 잠시 후 다시 시도해주세요."
+      );
       alert(msg);
       return;
     }
 
-    // 5) sessionStorage 저장
     sessionStorage.setItem(
       `payment_${holdRes.bookingId}`,
       JSON.stringify({
@@ -204,7 +254,6 @@ function HoldComponent() {
       })
     );
 
-    // 6) 카카오 결제창 이동 (PC/모바일 분기)
     const isMobile = /Mobile|Android|iPhone|iPad/.test(navigator.userAgent);
     window.location.href = isMobile
       ? readyRes.nextRedirectMobileUrl
@@ -213,7 +262,6 @@ function HoldComponent() {
 
   const isSubmitting = holdMutation.isPending || readyMutation.isPending;
 
-  // ── 결제 버튼 비활성 조건 ─────────────────────────────────
   const payDisabled =
     isSubmitting ||
     !reserverName.trim() ||
@@ -222,19 +270,34 @@ function HoldComponent() {
     !allRequired ||
     (schedule?.remainingCount ?? 0) <= 0;
 
-  // ── 로딩 / 에러 ──────────────────────────────────────────
+  if (!userId) {
+    return null;
+  }
+
   if (scheduleLoading) {
     return (
-      <div className="max-w-[520px] mx-auto bg-white p-6">
-        <div className="text-sm text-grey-5 tracking-tight-kr">로딩 중...</div>
+      <div className="w-full font-sans tracking-tight-kr">
+        <div className="bg-black text-white">
+          <div className="px-6 py-5 text-[19px] font-semibold tracking-tight-kr text-center md:text-left">
+            예약/결제
+          </div>
+        </div>
+        <div className="max-w-[480px] mx-auto px-6 py-8 text-[14px] text-grey-5">
+          로딩 중...
+        </div>
       </div>
     );
   }
 
   if (scheduleError || !schedule) {
     return (
-      <div className="max-w-[520px] mx-auto bg-white p-6">
-        <div className="text-sm text-hc-red tracking-tight-kr">
+      <div className="w-full font-sans tracking-tight-kr">
+        <div className="bg-black text-white">
+          <div className="px-6 py-5 text-[19px] font-semibold tracking-tight-kr text-center md:text-left">
+            예약/결제
+          </div>
+        </div>
+        <div className="max-w-[480px] mx-auto px-6 py-8 text-[14px] text-hc-red">
           일정 정보를 불러올 수 없습니다.
         </div>
       </div>
@@ -243,26 +306,25 @@ function HoldComponent() {
 
   const soldOut = schedule.remainingCount <= 0;
 
-  // ── 렌더링 ───────────────────────────────────────────────
   return (
-    <div className="max-w-[520px] mx-auto bg-white font-sans tracking-tight-kr">
+    <div className="w-full font-sans tracking-tight-kr">
 
-      {/* ① 검정 헤더 바 */}
-      <div className="bg-black text-white px-6 py-5 text-[17px] font-semibold tracking-tight-kr">
-        예약 / 결제
+      <div className="bg-black text-white">
+        <div className="px-6 py-5 text-[19px] font-semibold tracking-tight-kr text-center md:text-left">
+          예약/결제
+        </div>
       </div>
 
-      <div className="px-6 pb-8">
+      <div className="max-w-[480px] mx-auto px-6 pb-8">
 
-        {/* ② 예약 정보 카드 */}
-        <div className="border border-grey-2 mt-6 mb-6">
+        <div className="border border-grey-2 mt-10 mb-8">
           <div className="px-5 pt-4 pb-3 border-b border-grey-1 text-[16px] font-semibold text-black tracking-tight-kr">
             {locationState?.productName ?? schedule.productName}
           </div>
           <table className="w-full text-[14px] px-5">
             <tbody>
               <tr>
-                <td className="py-1 pl-5 text-grey-5 w-5/12">출발일</td>
+                <td className="pt-4 pb-1 pl-5 text-grey-5 w-5/12">출발일</td>
                 <td className="py-1 pr-5 text-grey-8 font-medium text-right">
                   {schedule.startDate}
                 </td>
@@ -287,7 +349,10 @@ function HoldComponent() {
                       매진
                     </span>
                   ) : (
-                    <span className="text-black">{schedule.remainingCount}명</span>
+                    <>
+                      <span className="text-black">{schedule.remainingCount}명</span>
+                      <span className="text-grey-5 font-normal ml-1">/ 최대 {schedule.maxHeadcount}명</span>
+                    </>
                   )}
                 </td>
               </tr>
@@ -301,13 +366,12 @@ function HoldComponent() {
           </div>
         ) : (
           <>
-            {/* ③ 예약자 정보 */}
-            <div className="mb-6">
+
+            <div className="mb-8">
               <div className="text-[15px] font-semibold text-black mb-3 tracking-tight-kr">
                 예약자 정보
               </div>
 
-              {/* 이름 */}
               <div className="mb-3">
                 <label className="block text-[13px] text-grey-6 mb-1">이름</label>
                 <input
@@ -327,7 +391,6 @@ function HoldComponent() {
                 )}
               </div>
 
-              {/* 연락처 */}
               <div className="mb-3">
                 <label className="block text-[13px] text-grey-6 mb-1">연락처</label>
                 <input
@@ -347,7 +410,6 @@ function HoldComponent() {
                 )}
               </div>
 
-              {/* 이메일 */}
               <div className="mb-3">
                 <label className="block text-[13px] text-grey-6 mb-1">이메일</label>
                 <input
@@ -367,7 +429,6 @@ function HoldComponent() {
                 )}
               </div>
 
-              {/* 예약 인원 */}
               <div>
                 <label className="block text-[13px] text-grey-6 mb-1">예약 인원</label>
                 <div className="flex items-center gap-3">
@@ -398,8 +459,7 @@ function HoldComponent() {
               </div>
             </div>
 
-            {/* ④ 적립금 사용 */}
-            <div className="mb-6">
+            <div className="mb-8">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[15px] font-semibold text-black tracking-tight-kr">
                   적립금 사용
@@ -444,8 +504,7 @@ function HoldComponent() {
               )}
             </div>
 
-            {/* ⑤ 약관 동의 */}
-            <div className="mb-6">
+            <div className="mb-8">
               <div className="text-[15px] font-semibold text-black mb-3 tracking-tight-kr">
                 약관 동의
               </div>
@@ -456,7 +515,7 @@ function HoldComponent() {
                 </div>
               ) : (
                 <>
-                  {/* 전체 동의 */}
+  
                   <div className="flex items-center gap-2 pb-3 mb-3 border-b border-grey-1">
                     <input
                       type="checkbox"
@@ -473,34 +532,27 @@ function HoldComponent() {
                     </label>
                   </div>
 
-                  {/* 약관별 행 — 백이 typeCode ASC 정렬해 응답, 프론트는 그 순서 그대로 */}
-                  {agreements.map((a) => (
-                    <div key={a.agreementId} className="flex items-center gap-2 mb-2">
-                      <input
-                        type="checkbox"
-                        id={`agree-${a.agreementId}`}
-                        checked={agreedIds.has(a.agreementId)}
-                        onChange={(e) => toggleOne(a.agreementId, e.target.checked)}
-                        style={{ borderRadius: 0, width: 16, height: 16, accentColor: "#000" }}
-                      />
-                      <label
-                        htmlFor={`agree-${a.agreementId}`}
-                        className="flex-1 text-[13px] text-grey-8 cursor-pointer tracking-tight-kr"
-                      >
-                        <span className="text-grey-5 mr-1">
-                          {a.isRequired === 1 ? "[필수]" : "[선택]"}
-                        </span>
-                        {a.title}
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setModalContent({ title: a.title, content: a.content })}
-                        className="text-[12px] text-black underline shrink-0 tracking-tight-kr"
-                      >
-                        내용보기
-                      </button>
-                    </div>
-                  ))}
+                  {requiredList.length > 0 && (
+                    <>
+                      <div className="text-[12px] font-medium text-grey-5 mb-2 tracking-tight-kr">
+                        필수 약관
+                      </div>
+                      {requiredList.map(renderAgreementRow)}
+                    </>
+                  )}
+
+                  {requiredList.length > 0 && optionalList.length > 0 && (
+                    <div className="h-2" />
+                  )}
+
+                  {optionalList.length > 0 && (
+                    <>
+                      <div className="text-[12px] font-medium text-grey-5 mb-2 tracking-tight-kr">
+                        선택 약관
+                      </div>
+                      {optionalList.map(renderAgreementRow)}
+                    </>
+                  )}
 
                   {fieldErrors.agreements && (
                     <p className="text-[13px] text-hc-red mt-2 font-medium tracking-tight-kr">
@@ -511,8 +563,7 @@ function HoldComponent() {
               )}
             </div>
 
-            {/* ⑥ 결제 수단 */}
-            <div className="mb-6">
+            <div className="mb-8">
               <div className="text-[15px] font-semibold text-black mb-3 tracking-tight-kr">
                 결제 수단
               </div>
@@ -520,7 +571,7 @@ function HoldComponent() {
                 style={{ borderRadius: 0 }}
                 className="border-[1.5px] border-black px-4 py-3 flex items-center gap-2.5"
               >
-                {/* 라디오 원 — 유일하게 radius 50% 허용 */}
+
                 <span className="w-[18px] h-[18px] rounded-full border-2 border-black
                   flex items-center justify-center shrink-0">
                   <span className="w-[9px] h-[9px] rounded-full bg-black" />
@@ -532,7 +583,6 @@ function HoldComponent() {
               </div>
             </div>
 
-            {/* ⑦ 가격 요약 */}
             <div className="mb-6">
               <div className="flex justify-between text-[14px] mb-2">
                 <span className="text-grey-5 tracking-tight-kr">
@@ -550,7 +600,7 @@ function HoldComponent() {
                   </span>
                 </div>
               )}
-              {/* 총 결제금액 강조선 */}
+
               <div className="border-t-2 border-black pt-4 flex justify-between items-baseline">
                 <span className="text-[15px] font-semibold text-black tracking-tight-kr">
                   총 결제금액
@@ -561,7 +611,6 @@ function HoldComponent() {
               </div>
             </div>
 
-            {/* ⑧ 결제 버튼 */}
             <button
               type="button"
               onClick={handlePay}
@@ -579,7 +628,7 @@ function HoldComponent() {
         )}
       </div>
 
-      {/* 약관 내용보기 모달 */}
+  
       {modalContent && (
         <div
           className="fixed inset-0 flex items-center justify-center z-50"

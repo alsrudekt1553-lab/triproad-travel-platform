@@ -10,6 +10,13 @@ import {
     deleteChecklistItem,
 } from "../../api/myPageApi";
 
+import {
+	getBookingsByUser,
+	getScheduleForBooking,
+	type BookingInfo,
+	type MyPageBookingSchedule,
+} from "../../api/myPageBookingApi";
+
 type ChecklistPageProps = {
     userId: number;
 };
@@ -44,24 +51,71 @@ function ChecklistPage({ userId }: ChecklistPageProps) {
     const [checklists, setChecklists] = useState<Checklist[]>([]);
     const [newItems, setNewItems] = useState<{ [key: number]: string }>({});
 
-    const trips: Trip[] = [
-        {
-            bookingId: 900001,
-            title: "제주 자연 힐링 패키지",
-            startDate: "2026-06-20",
-            endDate: "2026-06-22",
-            status: "upcoming",
-        },
-        {
-            bookingId: 900002,
-            title: "강원도 자연 탐방 패키지",
-            startDate: "2026-06-08",
-            endDate: "2026-06-15",
-            status: "ongoing",
-        },
-    ];
+    const [trips, setTrips] = useState<Trip[]>([]);
 
-    const filteredTrips = trips.filter((trip) => trip.status === tripStatus);
+    const filteredTrips = trips.filter(
+        (trip) => trip.status === tripStatus
+    );
+
+    useEffect(() => {
+        const fetchTrips = async () => {
+            try {
+                const bookings = await getBookingsByUser(userId);
+
+                const activeBookings = bookings.filter(
+                    (booking: BookingInfo) => booking.status !== 900
+                );
+
+                const convertedTrips = await Promise.all(
+                    activeBookings.map(
+                        async (booking): Promise<Trip | null> => {
+                            const schedule: MyPageBookingSchedule =
+                                await getScheduleForBooking(
+                                    booking.scheduleId
+                                );
+
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+
+                            const startDate = new Date(
+                                `${schedule.startDate.slice(0, 10)}T00:00:00`
+                            );
+
+                            const endDate = new Date(
+                                `${schedule.endDate.slice(0, 10)}T00:00:00`
+                            );
+
+                            if (endDate < today) {
+                                return null;
+                            }
+
+                            return {
+                                bookingId: booking.bookingId,
+                                title: schedule.productName,
+                                startDate: schedule.startDate.slice(0, 10),
+                                endDate: schedule.endDate.slice(0, 10),
+                                status:
+                                    startDate > today
+                                        ? "upcoming"
+                                        : "ongoing",
+                            };
+                        }
+                    )
+                );
+
+                setTrips(
+                    convertedTrips.filter(
+                        (trip): trip is Trip => trip !== null
+                    )
+                );
+            } catch (err) {
+                console.log("체크리스트 여행 조회 실패:", err);
+                setTrips([]);
+            }
+        };
+
+        fetchTrips();
+    }, [userId]);
 
     useEffect(() => {
         getChecklists(userId)
@@ -92,7 +146,7 @@ function ChecklistPage({ userId }: ChecklistPageProps) {
         } else {
             setSelectedBookingId(null);
         }
-    }, [tripStatus]);
+    }, [tripStatus, trips]);
 
     const filteredChecklists = checklists.filter(
         (checklist) => checklist.bookingId === selectedBookingId
@@ -320,12 +374,15 @@ function ChecklistPage({ userId }: ChecklistPageProps) {
     };
 
     return (
-        <div className="bg-white border rounded-lg p-6">
-            <div className="flex items-center justify-between mb-6">
+        <div className="border border-neutral-200 bg-white p-6 shadow-sm">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold">여행 준비 체크리스트</h2>
-                    <p className="text-gray-500 mt-1">
-                        예정/진행 중인 여행별로 준비물을 관리합니다.
+                    <h2 className="text-xl font-extrabold text-neutral-900">
+                        여행 준비 체크리스트
+                    </h2>
+
+                    <p className="mt-1 text-sm text-neutral-500">
+                        예정 및 진행 중인 여행별로 준비물을 관리합니다.
                     </p>
                 </div>
 
@@ -362,7 +419,7 @@ function ChecklistPage({ userId }: ChecklistPageProps) {
                 </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
                 {filteredTrips.map((trip) => (
                     <button
                         key={trip.bookingId}
@@ -381,7 +438,7 @@ function ChecklistPage({ userId }: ChecklistPageProps) {
                 ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
                 {filteredChecklists.map((checklist) => {
                     const completedCount = checklist.items.filter(
                         (item) => item.isChecked === 500
@@ -390,10 +447,10 @@ function ChecklistPage({ userId }: ChecklistPageProps) {
                     return (
                         <section
                             key={checklist.checklistId}
-                            className="border rounded-lg p-5 bg-gray-50"
+                            className="border border-neutral-200 bg-neutral-50 p-5"
                         >
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-xl font-bold">
+                                <h3 className="text-lg font-extrabold text-neutral-900">
                                     {checklist.title} ({completedCount}/
                                     {checklist.items.length})
                                 </h3>

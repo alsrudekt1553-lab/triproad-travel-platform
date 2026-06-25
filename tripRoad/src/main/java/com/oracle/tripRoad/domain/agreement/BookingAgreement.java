@@ -28,17 +28,14 @@ public class BookingAgreement {
     @Column(name = "BOOKING_ID", nullable = false)
     private Long bookingId;
 
- 
     @Column(name = "AGREEMENT_ID", nullable = false)
     private Long agreementId;
 
     @Column(name = "AGREED_AT", updatable = false)
     private LocalDateTime agreedAt;
 
-
     @Column(name = "IP_ADDRESS", length = 45)
     private String ipAddress;
-
 
     @Column(name = "USER_AGENT", length = 500)
     private String userAgent;

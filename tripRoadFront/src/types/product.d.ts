@@ -1,12 +1,13 @@
 // 상품 목록 조회 시 응답 타입
 interface ProductListDto {
-  productId: number
-  productName: string
-  price: number
-  themeName: string | null
-  regionId: number | null
-  regionName: string | null
-  imageName: string | null
+	productId: number
+	productName: string
+	price: number
+	themeName: string | null
+	regionId: number | null
+	regionName: string | null
+	imageName: string | null
+	averageRating: number | null
 }
 
 // 상품 상세 조회 시 응답 타입

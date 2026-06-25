@@ -12,15 +12,14 @@ public class BookingScheduler {
 
     private final BookingService bookingService;
 
-
     @Scheduled(fixedRate = 60000)
     public void cleanUpExpiredHolds() {
         try {
             log.debug("HOLD 만료 스케줄러 실행");
             bookingService.releaseExpiredHolds();
         } catch (Exception e) {
-
             log.error("HOLD 만료 처리 실패: {}", e.getMessage(), e);
         }
     }
 }
+

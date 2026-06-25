@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -52,8 +54,31 @@ public class MyPageServiceImpl implements MyPageService {
 
 	@Override
 	public void deleteWishlist(Long wishlistId) {
-		wishlistRepository.deleteById(wishlistId);		
-	}
+		wishlistRepository.deleteById(wishlistId);
+		}
+		@Override
+		public WishlistDto toggleWishlist(Long userId, Long productId) {
+		    Optional<Wishlist> existing = wishlistRepository.findByMemberIdAndPackageId(userId, productId);
+		    if (existing.isPresent()) {
+		        wishlistRepository.delete(existing.get());
+		        return WishlistDto.builder().userId(userId).productId(productId).wished(false).build();
+		    }
+		    Wishlist saved = wishlistRepository.save(
+		        Wishlist.builder()
+		            .memberId(userId)
+		            .packageId(productId)
+		            .createdAt(LocalDateTime.now())
+		            .build()
+		    );
+		    return WishlistDto.builder()
+		        .wishlistId(saved.getWishlistId())
+		        .userId(userId)
+		        .productId(productId)
+		        .wished(true)
+		        .build();
+		}
+
+	
 
 	@Override
 	public List<Checklist> getChecklists(Long userId) {

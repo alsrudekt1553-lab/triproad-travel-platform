@@ -23,7 +23,7 @@ public class UserPoint {
             sequenceName = "USER_POINT_SEQ",
             allocationSize = 1
     )
-    @Column(name = "USER_POINT_ID")
+    @Column(name = "USER_POINT_ID", precision = 19)
     private Long userPointId;
 
     @Column(name = "USER_ID", nullable = false, unique = true)
@@ -53,7 +53,6 @@ public class UserPoint {
         this.updatedAt = LocalDateTime.now();
     }
 
-
     public void deduct(int amount) {
         if (amount <= 0) {
             throw new IllegalArgumentException("차감 금액은 0보다 커야 합니다. amount=" + amount);
@@ -82,3 +81,5 @@ public class UserPoint {
         this.pointBalance += amount;
     }
 }
+
+

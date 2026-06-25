@@ -17,7 +17,6 @@ public class BookingController {
 
     private final BookingService bookingService;
 
-
     @PostMapping("/hold")
     public ResponseEntity<?> holdBooking(@RequestBody BookingDto.HoldRequest request,
                                          HttpServletRequest httpRequest) {
@@ -58,7 +57,6 @@ public class BookingController {
         }
     }
 
-
     @GetMapping("/user/{userId}")
     public ResponseEntity<?> getBookingsByUserId(@PathVariable("userId") Long userId) {
         try {
@@ -69,6 +67,16 @@ public class BookingController {
         }
     }
 
+    @GetMapping("/{bookingId}")
+    public ResponseEntity<?> getBookingDetail(@PathVariable("bookingId") Long bookingId) {
+        try {
+            BookingDto.InfoResponse response = bookingService.getBookingDetail(bookingId);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("예약 상세 조회 실패 - bookingId={}, msg={}", bookingId, e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
     @GetMapping("/schedule/{scheduleId}")
     public ResponseEntity<?> getScheduleForBooking(@PathVariable("scheduleId") Long scheduleId) {
@@ -81,8 +89,6 @@ public class BookingController {
         }
     }
 
-
-    
     private String extractClientIp(HttpServletRequest req) {
         String forwarded = req.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {

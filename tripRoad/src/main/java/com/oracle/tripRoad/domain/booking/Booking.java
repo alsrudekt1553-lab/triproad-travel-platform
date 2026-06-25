@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 @Builder
 public class Booking {
 
-
     public static final int STATUS_HOLD       = 100;  
     public static final int STATUS_CONFIRMED  = 500;  
     public static final int STATUS_CANCELLED  = 900; 
@@ -21,7 +20,7 @@ public class Booking {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "booking_seq")
     @SequenceGenerator(name = "booking_seq", sequenceName = "BOOKING_SEQ", allocationSize = 1)
-    @Column(name = "BOOKING_ID")
+    @Column(name = "BOOKING_ID" , precision = 19)
     private Long bookingId;
 
     @Column(name = "USER_ID")
@@ -41,7 +40,6 @@ public class Booking {
 
     @Column(name = "FINAL_PRICE")
     private Long finalPrice;
-
 
     @Column(name = "RESERVER_NAME", length = 50)
     private String reserverName;
@@ -67,12 +65,10 @@ public class Booking {
     @Column(name = "UPDATED_AT")
     private LocalDateTime updatedAt;
 
-
     public void confirm() {
         this.status = STATUS_CONFIRMED;
         this.updatedAt = LocalDateTime.now();
     }
-
 
     public void cancel() {
         this.status = STATUS_CANCELLED;

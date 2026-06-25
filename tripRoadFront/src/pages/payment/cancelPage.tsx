@@ -3,8 +3,6 @@ import { useNavigate, useParams } from "react-router";
 import { useMutation } from "@tanstack/react-query";
 import { deleteCancel } from "../../api/paymentApi";
 
-// readyComponent가 sessionStorage에 저장해둔 데이터 모양
-// payment_{bookingId} 키로 JSON.stringify되어 들어있음
 interface ReadyStoredData {
   tid: string;
   partnerOrderId: number;
@@ -14,103 +12,100 @@ interface ReadyStoredData {
   productName: string;
 }
 
-// 결제 취소 페이지
-// 사용자가 카카오페이 결제창에서 "취소" 버튼을 눌렀을 때 진입
-// URL: /payment/cancel/{bookingId}
-// readyComponent의 cancelUrl과 매칭
-//
-// 처리 흐름:
-//   1. sessionStorage에서 ready 데이터 꺼내기 (화면 표시용)
-//   2. 백 cancel API 호출 → PAYMENT 삭제 + BOOKING 해제 (잔여 인원 즉시 회복)
-//   3. sessionStorage 정리
-//
-// 백 호출 실패해도 사용자 에러 노출 X
-// → BookingScheduler가 10분 내 자동 정리하는 안전망 작동
 function CancelPage() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
-
-  // ready 시점에 저장한 데이터 (sessionStorage에서 꺼냄, 화면 표시용)
-  // 새로고침/직접 URL 진입 시 없을 수 있음 — 에러 아니라 정상 케이스
   const [storedData, setStoredData] = useState<ReadyStoredData | null>(null);
-
-  // 결제 취소 처리 - PAYMENT 삭제 + BOOKING 해제 (잔여 인원 즉시 회복)
-  // 멱등 보장: 백에서 ifPresent 처리 → 새로고침/중복 호출도 안전
-  // StrictMode 중복 호출은 isPending/isSuccess로 차단
-  // 실패해도 사용자에게 에러 노출 X — 스케줄러가 10분 후 자동 정리 (안전망)
   const cancelMutation = useMutation({
     mutationFn: (bid: number) => deleteCancel(bid),
     onSuccess: (res) => {
       console.log("CancelPage cancel res->", res);
     },
     onError: (err) => {
-      // 사용자에게 에러 표시 X — 스케줄러 안전망 작동
       console.error("결제 취소 처리 실패 (스케줄러가 10분 내 자동 정리)", err);
     },
   });
 
   useEffect(() => {
     if (!bookingId) return;
-
-    // sessionStorage에서 ready 데이터 꺼내기 (화면 표시용)
     const stored = sessionStorage.getItem(`payment_${bookingId}`);
     if (stored) {
       const data = JSON.parse(stored) as ReadyStoredData;
       setStoredData(data);
     }
 
-    // 사용 완료된 sessionStorage 데이터 정리
     sessionStorage.removeItem(`payment_${bookingId}`);
 
-    // 백 cancel API 호출 — PAYMENT 삭제 + BOOKING 해제
     if (cancelMutation.isPending || cancelMutation.isSuccess) return;
     cancelMutation.mutate(parseInt(bookingId));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingId]);
 
   return (
-    <div className="bg-white rounded-lg p-4 m-2 w-full">
-      <div className="border-2 border-blue-100 mt-10 mr-2 ml-2 p-6">
-        <div className="text-2xl font-bold text-orange-500 mb-6">
-          결제가 취소되었습니다
-        </div>
+    <div className="w-full font-sans tracking-tight-kr">
 
-        <div className="border-t border-b py-4 mb-6">
+      <div className="bg-black text-white">
+        <div className="px-6 py-5 text-[19px] font-semibold tracking-tight-kr text-center md:text-left">
+          결제 취소
+        </div>
+      </div>
+
+      <div className="max-w-[480px] mx-auto px-6 pt-10 pb-8">
+
+        <p className="text-[14px] font-semibold text-black mb-8 tracking-tight-kr">
+          결제가 취소되었습니다.
+        </p>
+
+        <div className="border border-grey-2 bg-white mb-8">
+
           {storedData && (
-            <>
-              <div className="text-lg mb-3 text-gray-700 font-bold">
-                {storedData.productName}
-              </div>
-              <div className="flex justify-between text-lg mb-3">
-                <div className="text-gray-500">결제 예정 금액</div>
-                <div className="font-extrabold">
-                  {storedData.amount.toLocaleString()}원
-                </div>
-              </div>
-            </>
+            <div className="px-5 pt-4 pb-3 border-b border-grey-1
+              text-[16px] font-semibold text-black">
+              {storedData.productName}
+            </div>
           )}
-          <div className="flex justify-between text-sm text-gray-500">
-            <div>예약 번호</div>
-            <div>#{bookingId}</div>
-          </div>
+
+          <table className="w-full text-[14px]">
+            <tbody>
+              {storedData && (
+                <tr>
+                  <td className="py-2 pl-5 text-grey-5">결제 예정 금액</td>
+                  <td className="py-2 pr-5 text-grey-8 font-medium text-right
+                    tracking-tight-num">
+                    {storedData.amount.toLocaleString()}원
+                  </td>
+                </tr>
+              )}
+              <tr>
+                <td className="py-2 pl-5 pb-4 text-grey-5">예약 번호</td>
+                <td className="py-2 pr-5 pb-4 text-grey-8 text-right tracking-tight-num">
+                  #{bookingId}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        <div className="text-sm text-gray-500 mb-6">
-          예약은 일정 시간 동안 유지되며, 마이페이지에서 다시 결제하거나 취소할 수 있습니다.
-        </div>
+        <p className="text-[13px] text-grey-5 mb-8 tracking-tight-kr leading-relaxed">
+          예약은 일정 시간 동안 유지되며, 마이페이지에서 다시 결제하거나
+          취소할 수 있습니다.
+        </p>
 
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => navigate("/booking/list")}
-            className="flex-1 py-3 border rounded text-lg"
+            style={{ borderRadius: 0 }}
+            className="flex-1 py-3.5 border border-grey-2 text-[14px] text-grey-8
+              hover:border-black hover:text-black transition-colors"
           >
             예약 내역으로
           </button>
           <button
             type="button"
             onClick={() => navigate("/")}
-            className="flex-1 py-3 bg-blue-500 text-white rounded text-lg"
+            style={{ borderRadius: 0 }}
+            className="flex-1 py-3.5 bg-black text-white text-[14px] font-semibold
+              hover:bg-grey-8 transition-colors"
           >
             홈으로
           </button>

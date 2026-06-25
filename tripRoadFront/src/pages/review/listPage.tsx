@@ -1,34 +1,60 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { getReviewSummary } from "../../api/reviewApi";
+
+type ReviewMenu = {
+  scheduleId: number;
+  title: string;
+  desc: string;
+  tag: string;
+  rating: string;
+  count: number;
+};
+
+const baseMenus = [
+  {
+    scheduleId: 100005,
+    title: "제주 자연 패키지",
+    desc: "숲길, 오름, 자연 명소 중심의 제주 여행 후기",
+    tag: "자연",
+  },
+  {
+    scheduleId: 100011,
+    title: "제주 도착 및 숲길 산책",
+    desc: "제주 숲길을 따라 여유롭게 즐기는 자연 여행 후기",
+    tag: "제주",
+  },
+  {
+    scheduleId: 100099,
+    title: "항일암 일출 + 돌산공원",
+    desc: "아름다운 일출과 돌산공원의 야경을 함께 즐긴 여행 후기",
+    tag: "일출",
+  },
+];
 
 function ListPage() {
   const navigate = useNavigate();
+  const [reviewMenus, setReviewMenus] = useState<ReviewMenu[]>([]);
 
-  const reviewMenus = [
-    {
-      scheduleId: 100005,
-      title: "제주 자연 패키지",
-      desc: "숲길, 오름, 자연 명소 중심의 제주 여행 후기",
-      tag: "자연",
-      rating: "4.0",
-      count: "2",
-    },
-    {
-      scheduleId: 100011,
-      title: "부산 야경 투어",
-      desc: "야경과 바다를 함께 즐기는 부산 여행 후기",
-      tag: "야경",
-      rating: "5.0",
-      count: "1",
-    },
-    {
-      scheduleId: 900003,
-      title: "부산 야경 테스트",
-      desc: "테스트 일정에 등록된 후기 확인",
-      tag: "테스트",
-      rating: "5.0",
-      count: "1",
-    },
-  ];
+  useEffect(() => {
+    const loadSummary = async () => {
+      const result = await Promise.all(
+        baseMenus.map(async (item) => {
+          const summary = await getReviewSummary(item.scheduleId);
+
+          return {
+            ...item,
+            rating: Number(summary.avgRating || 0).toFixed(1),
+            count: Number(summary.reviewCount || 0),
+          };
+        })
+      );
+
+      setReviewMenus(result);
+    };
+
+    loadSummary();
+  }, []);
 
   return (
     <div style={styles.container}>
@@ -78,6 +104,7 @@ function ListPage() {
             </div>
           ))}
         </div>
+
         <div style={styles.moreGuide}>
           현재 표시되는 상품은 대표 후기 상품입니다.
           더 많은 후기는 각 여행상품 상세 페이지에서 확인할 수 있습니다.
@@ -249,16 +276,16 @@ const styles: { [key: string]: React.CSSProperties } = {
     lineHeight: 1.7,
   },
   moreGuide: {
-  marginTop: "20px",
-  padding: "16px",
-  borderRadius: "14px",
-  backgroundColor: "#f8fafc",
-  color: "#64748b",
-  textAlign: "center",
-  fontWeight: 700,
-  lineHeight: 1.6,
-  border: "1px solid #e2e8f0",
-},
+    marginTop: "20px",
+    padding: "16px",
+    borderRadius: "14px",
+    backgroundColor: "#f8fafc",
+    color: "#64748b",
+    textAlign: "center",
+    fontWeight: 700,
+    lineHeight: 1.6,
+    border: "1px solid #e2e8f0",
+  },
 };
 
 export default ListPage;

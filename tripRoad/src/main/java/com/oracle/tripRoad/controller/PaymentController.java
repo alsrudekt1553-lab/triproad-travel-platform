@@ -58,7 +58,6 @@ public class PaymentController {
 		}
 	}
 
-
 	@DeleteMapping("/cancel/{bookingId}")
 	public ResponseEntity<?> cancelPayment(@PathVariable("bookingId") Long bookingId) {
 		try {

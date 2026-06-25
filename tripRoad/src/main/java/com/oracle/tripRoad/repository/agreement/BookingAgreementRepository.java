@@ -7,12 +7,9 @@ import java.util.List;
 
 public interface BookingAgreementRepository extends JpaRepository<BookingAgreement, Long> {
 
-
     List<BookingAgreement> findByBookingId(Long bookingId);
 
-
     long countByBookingId(Long bookingId);
-
 
     boolean existsByBookingIdAndAgreementId(Long bookingId, Long agreementId);
 }

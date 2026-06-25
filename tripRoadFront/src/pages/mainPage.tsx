@@ -20,6 +20,7 @@ function MainPage() {
 
   const themes = home?.themes || []
   const recommendProducts = home?.recommendProducts || []
+  const newProducts = home?.newProducts || []
 
   return (
     <div className="w-full text-neutral-900">
@@ -58,43 +59,131 @@ function MainPage() {
       </section>
 
       <section className="mt-7">
-        <div className="mb-3 text-base font-extrabold">추천 상품</div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {recommendProducts.map((product, index) => (
-            <div
-              key={product.productId}
-              onClick={() => navigate(`/product/read/${product.productId}`)}
-              className="cursor-pointer overflow-hidden border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-            >
-              <div className="h-28 bg-neutral-100">
-                {product.imageName ? (
-                  <img
-                    alt={product.productName}
-                    className="h-full w-full object-cover"
-                    src={`${API_SERVER_HOST}/api/products/view/s_${encodeURIComponent(product.imageName)}`}
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-xs text-neutral-400">
-                    이미지 없음
-                  </div>
-                )}
-              </div>
-
-              <div className="p-4">
-                <span className="inline-flex rounded-full bg-teal-600 px-3 py-1 text-xs font-semibold text-white">
-                  {index === 0 ? "인기" : index === 1 ? "신규" : "추천"}
-                </span>
-                <div className="mt-3 font-extrabold text-neutral-900">{product.productName}</div>
-                <div className="mt-1 text-xs text-neutral-500">
-                  {product.regionName} · {product.themeName}
-                </div>
-                <div className="mt-2 text-sm font-bold text-red-500">
-                  {product.price?.toLocaleString()}원
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="mb-3 text-base font-extrabold">
+          별점 높은 추천 상품
         </div>
+
+        {recommendProducts.length === 0 ? (
+          <div className="border border-neutral-200 bg-white p-8 text-center text-sm text-neutral-500">
+            아직 후기가 등록된 상품이 없습니다.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {recommendProducts.map((product) => (
+              <div
+                key={product.productId}
+                onClick={() =>
+                  navigate(`/product/read/${product.productId}`)
+                }
+                className="cursor-pointer overflow-hidden border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <div className="h-28 bg-neutral-100">
+                  {product.imageName ? (
+                    <img
+                      alt={product.productName}
+                      className="h-full w-full object-cover"
+                      src={`${API_SERVER_HOST}/api/products/view/s_${encodeURIComponent(product.imageName)}`}
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-xs text-neutral-400">
+                      이미지 없음
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="inline-flex rounded-full bg-teal-600 px-3 py-1 text-xs font-semibold text-white">
+                      별점 추천
+                    </span>
+
+                    {product.averageRating != null && (
+                      <span className="text-sm font-extrabold text-amber-500">
+                        ★ {product.averageRating.toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-3 font-extrabold text-neutral-900">
+                    {product.productName}
+                  </div>
+
+                  <div className="mt-1 text-xs text-neutral-500">
+                    {product.regionName} · {product.themeName}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-red-500">
+                    {product.price?.toLocaleString()}원
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mt-8">
+        <div className="mb-3 text-base font-extrabold">
+          신규 상품
+        </div>
+
+        {newProducts.length === 0 ? (
+          <div className="border border-neutral-200 bg-white p-8 text-center text-sm text-neutral-500">
+            등록된 신규 상품이 없습니다.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {newProducts.map((product) => (
+              <div
+                key={product.productId}
+                onClick={() =>
+                  navigate(`/product/read/${product.productId}`)
+                }
+                className="cursor-pointer overflow-hidden border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <div className="h-28 bg-neutral-100">
+                  {product.imageName ? (
+                    <img
+                      alt={product.productName}
+                      className="h-full w-full object-cover"
+                      src={`${API_SERVER_HOST}/api/products/view/s_${encodeURIComponent(product.imageName)}`}
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-xs text-neutral-400">
+                      이미지 없음
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="inline-flex rounded-full bg-sky-700 px-3 py-1 text-xs font-semibold text-white">
+                      신규
+                    </span>
+
+                    {product.averageRating != null && (
+                      <span className="text-sm font-extrabold text-amber-500">
+                        ★ {product.averageRating.toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-3 font-extrabold text-neutral-900">
+                    {product.productName}
+                  </div>
+
+                  <div className="mt-1 text-xs text-neutral-500">
+                    {product.regionName} · {product.themeName}
+                  </div>
+
+                  <div className="mt-2 text-sm font-bold text-red-500">
+                    {product.price?.toLocaleString()}원
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   )

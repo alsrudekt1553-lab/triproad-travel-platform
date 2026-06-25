@@ -1,34 +1,11 @@
-import { Outlet, useNavigate } from "react-router";
+import { Outlet } from "react-router"
 
 function IndexPage() {
-    // useNavigate는 React Router에서 제공하는 훅으로, 프로그래밍 방식으로 경로를 변경할 때 사용
-    // navigate 함수는 이 훅에서 반환되며, 이를 호출하면 지정한 경로로 이동할 수 있음
-    const navigate = useNavigate() 
-
-    const handleClickList = () => {
-    navigate({pathname: 'list'});
-    }
-
-    return (
-        <div>
-            <div className="w-full flex m-2 p-2">
-                <div
-                    className="text-xl flex m-1 p-2 w-32 font-extrabold text-center underline cursor-pointer"
-                    onClick={handleClickList}
-                >
-                    MyPage
-                </div>
-            </div>
-
-            <div className="flex flex-wrap w-full">
-                <Outlet />
-            </div>
-        </div>
-    );
+  return (
+    <div className="w-full">
+      <Outlet />
+    </div>
+  )
 }
 
-export default IndexPage;
-
-
-                // <button onClick={()=>navigate('/')}>Main</button>
-                // <button onClick={()=>navigate('/about')}>About</button>
+export default IndexPage

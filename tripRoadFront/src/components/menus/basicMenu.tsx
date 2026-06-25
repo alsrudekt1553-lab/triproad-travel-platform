@@ -105,9 +105,6 @@ function BasicMenu() {
                     <NavLink to="/booking/list" className={navClass}>
                         예약
                     </NavLink>
-                    <NavLink to="/payment/list" className={navClass}>
-                        결제
-                    </NavLink>
                 </div>
             </nav>
         </header>

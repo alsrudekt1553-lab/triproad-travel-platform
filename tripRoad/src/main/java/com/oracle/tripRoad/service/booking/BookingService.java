@@ -17,5 +17,8 @@ public interface BookingService {
 
     List<BookingDto.InfoResponse> getBookingsByUserId(Long userId);
 
+    BookingDto.InfoResponse getBookingDetail(Long bookingId);
+
     BookingScheduleViewDto getScheduleForBooking(Long scheduleId);
+
 }

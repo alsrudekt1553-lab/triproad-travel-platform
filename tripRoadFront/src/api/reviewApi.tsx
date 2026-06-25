@@ -1,5 +1,5 @@
 import axios from "axios";
-import { API_SERVER_HOST } from "./todoApi";
+import { API_SERVER_HOST } from "./apiConfig"
 import type { ReviewAdd, ReviewModify } from "../types/review";
 
 const prefix = `${API_SERVER_HOST}/api/review`;

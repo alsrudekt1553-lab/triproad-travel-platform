@@ -6,9 +6,12 @@ import java.util.List;
 
 public interface AgreementService {
 
+    List<AgreementDto.Info> getCurrentAgreements(Long productId, Long scheduleId);
 
-    List<AgreementDto.Info> getCurrentAgreements();
+    void saveAgreements(Long bookingId, Long userId, Long productId, Long scheduleId,
+                        List<Long> agreementIds, String ipAddress, String userAgent);
 
+    List<AgreementDto.ConsentResponse> getAgreementsByBookingId(Long bookingId);
 
-    void saveAgreements(Long bookingId, List<Long> agreementIds, String ipAddress, String userAgent);
+    void withdrawAgreement(Long userAgreementId, Long userId);
 }

@@ -14,7 +14,6 @@ import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
-
     List<Booking> findByUserIdOrderByCreatedAtDesc(Long userId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -44,3 +43,4 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                      @Param("status") int status,
                      @Param("updatedAt") LocalDateTime updatedAt);
 }
+

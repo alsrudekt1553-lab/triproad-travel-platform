@@ -28,9 +28,6 @@ function ListPage() {
           <h2 className="text-2xl font-extrabold text-neutral-900">
             예약 목록
           </h2>
-          <p className="mt-1 text-sm text-neutral-500">
-            회원들의 패키지 예약 현황을 확인합니다.
-          </p>
         </div>
 
         <div className="text-sm font-semibold text-neutral-500">

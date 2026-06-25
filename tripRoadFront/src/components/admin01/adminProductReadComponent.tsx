@@ -71,9 +71,6 @@ function AdminProductReadComponent() {
           <h2 className="text-2xl font-extrabold text-neutral-900">
             상품 상세
           </h2>
-          <p className="mt-1 text-sm text-neutral-500">
-            상품 정보와 등록된 일정을 관리합니다.
-          </p>
         </div>
 
         <button

@@ -18,4 +18,5 @@ public class ProductListDto {
     private Integer regionId;    // 지역코드
     private String imageName;    // 대표 이미지 파일명
     private String regionName;   // 지역명
+    private Double averageRating;
 }

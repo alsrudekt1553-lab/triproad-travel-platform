@@ -41,8 +41,12 @@ public class ReviewImageController {
 
     private final ReviewImageService reviewImageService;
 
-    @Value("${com.oracle.tripRoad.upload.path:C:/upload/tripRoad/review}")
+    @Value("${com.oracle.tripRoad.upload.path:upload}")
     private String uploadPath;
+
+    private String reviewUploadPath() {
+        return uploadPath + File.separator + "reviewImage";
+    }
 
     private User01Dto getLoginUser(HttpSession session) {
         User01Dto loginUser = (User01Dto) session.getAttribute("LOGIN_USER");
@@ -67,7 +71,7 @@ public class ReviewImageController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "업로드할 이미지가 없습니다.");
         }
 
-        File uploadFolder = new File(uploadPath);
+        File uploadFolder = new File(reviewUploadPath());
 
         if (!uploadFolder.exists()) {
             uploadFolder.mkdirs();
@@ -140,7 +144,7 @@ public class ReviewImageController {
             @PathVariable("imageName") String imageName) {
 
         try {
-            File file = new File(uploadPath, imageName);
+        	File file = new File(reviewUploadPath(), imageName);
             Resource resource = new UrlResource(file.toURI());
 
             if (!resource.exists() || !resource.isReadable()) {
@@ -176,7 +180,7 @@ public class ReviewImageController {
         ReviewImageDto imageDto = reviewImageService.get(reviewImageId);
 
         if (imageDto != null && imageDto.getImageName() != null) {
-            File file = new File(uploadPath, imageDto.getImageName());
+        	File file = new File(reviewUploadPath(), imageDto.getImageName());
 
             if (file.exists()) {
                 file.delete();

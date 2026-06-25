@@ -17,6 +17,7 @@ import com.oracle.tripRoad.repository.product.ProductImageRepository;
 import com.oracle.tripRoad.repository.product.ProductScheduleRepository;
 import com.oracle.tripRoad.repository.product.ThemeRepository;
 import com.oracle.tripRoad.repository.product.TravelProductRepository;
+import com.oracle.tripRoad.repository.review.ReviewRepository;
 import com.oracle.tripRoad.repository.statusType.StatusTypeRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,18 @@ public class ProductService {
     private final ProductImageRepository imageRepository;
     private final ProductScheduleRepository scheduleRepository;
     private final StatusTypeRepository statusTypeRepository;
+    private final ReviewRepository reviewRepository;
+    
+    private Double getAverageRating(Long productId) {
+    	Double averageRating =
+    			reviewRepository.getAvgRatingByProductId(productId);
+
+    	if (averageRating == null || averageRating <= 0) {
+    		return null;
+    	}
+
+    	return averageRating;
+    }
 
     // 지역 목록 한번에 가져와서 Map으로 만들기
     // { 100: "제주도", 120: "부산" } 이런 형태
@@ -61,6 +74,7 @@ public class ProductService {
                             .regionName(regionMap.getOrDefault(product.getRegionId(), String.valueOf(product.getRegionId())))
                             .themeName(product.getTheme() != null ? product.getTheme().getThemeName() : null)
                             .imageName(imageName)
+                            .averageRating(getAverageRating(product.getProductId()))
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -85,6 +99,7 @@ public class ProductService {
                             .regionName(regionMap.getOrDefault(product.getRegionId(), String.valueOf(product.getRegionId())))
                             .themeName(product.getTheme() != null ? product.getTheme().getThemeName() : null)
                             .imageName(imageName)
+                            .averageRating(getAverageRating(product.getProductId()))
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -109,6 +124,7 @@ public class ProductService {
                             .regionName(regionMap.getOrDefault(product.getRegionId(), String.valueOf(product.getRegionId())))
                             .themeName(product.getTheme() != null ? product.getTheme().getThemeName() : null)
                             .imageName(imageName)
+                            .averageRating(getAverageRating(product.getProductId()))
                             .build();
                 })
                 .collect(Collectors.toList());

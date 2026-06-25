@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getMyQnas, type MyQna } from "../../api/myPageQnaApi";
+import { formatDate } from "../../utils/dateFormat";
 
 function getStatusText(status: number) {
   if (status === 200) return "답변완료";
@@ -35,16 +36,18 @@ function MyQnaPage({ userId }: MyQnaPageProps) {
       .finally(() => {
         setLoading(false);
       });
-  }, []);
+  }, [userId]);
 
   const visibleQnas = qnas.slice(0, visibleCount);
 
   return (
-    <div className="bg-white border rounded-lg p-6">
+    <div className="border border-neutral-200 bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold">내 문의</h2>
-          <p className="text-gray-500 mt-1">
+          <h2 className="text-xl font-extrabold text-neutral-900">
+            내 문의
+          </h2>
+          <p className="mt-1 text-sm text-neutral-500">
             작성한 문의 {qnas.length}개
           </p>
         </div>
@@ -99,7 +102,7 @@ function MyQnaPage({ userId }: MyQnaPageProps) {
                     </p>
 
                     <p className="text-sm text-gray-400 mt-3">
-                      작성일: {qna.createdAt}
+                      작성일: {formatDate(qna.createdAt)}
                     </p>
                   </div>
 

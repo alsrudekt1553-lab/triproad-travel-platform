@@ -20,7 +20,6 @@ public class PointController {
 
     private final UserPointService userPointService;
 
-
     @GetMapping("/{userId}")
     public ResponseEntity<?> getBalance(@PathVariable("userId") Long userId) {
         try {
@@ -31,7 +30,6 @@ public class PointController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-
 
     @GetMapping("/{userId}/history")
     public ResponseEntity<?> getHistory(@PathVariable("userId") Long userId) {
@@ -44,4 +42,5 @@ public class PointController {
         }
     }
 }
+
 

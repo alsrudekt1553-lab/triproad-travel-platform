@@ -15,4 +15,20 @@ export const getCurrentAgreements = async (productId?: number, scheduleId?: numb
   return res.data as AgreementInfo[];
 }
 
+export const getAgreementsByBooking = async (bookingId: number) => {
+  console.log('getAgreementsByBooking bookingId->', bookingId);
+  const res = await axios.get(`${prefix}/booking/${bookingId}`);
+  console.log('getAgreementsByBooking res->', res);
+  return res.data as AgreementConsentResponse[];
+}
 
+export const withdrawAgreement = async (userAgreementId: number, userId: number) => {
+  console.log('withdrawAgreement userAgreementId->', userAgreementId, 'userId->', userId);
+
+  const res = await axios.patch(`${prefix}/withdraw/${userAgreementId}`, null, {
+    params: { userId },
+  });
+
+  console.log('withdrawAgreement res->', res);
+  return res.data as string;
+}

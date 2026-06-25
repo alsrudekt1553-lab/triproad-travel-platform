@@ -19,6 +19,7 @@ public interface MyPageService {
     ChecklistItem updateChecklistItem(ChecklistItem checklistItem);
 
     void deleteWishlist(Long wishlistId);
+    WishlistDto toggleWishlist(Long userId, Long productId);
     void deleteChecklist(Long checklistId);
     void deleteChecklistItem(Long itemId);
 	Checklist 	getChecklist(Long checklistId); 

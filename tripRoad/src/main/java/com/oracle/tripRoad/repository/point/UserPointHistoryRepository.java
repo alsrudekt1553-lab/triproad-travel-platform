@@ -9,12 +9,12 @@ import java.util.List;
 
 public interface UserPointHistoryRepository extends JpaRepository<UserPointHistory, Long> {
 
-
     @Query("SELECT COUNT(h) > 0 FROM UserPointHistory h " +
            "WHERE h.bookingId = :bookingId AND h.historyType = :historyType")
     boolean existsByBookingIdAndHistoryType(@Param("bookingId") Long bookingId,
                                             @Param("historyType") int historyType);
 
+    List<UserPointHistory> findByBookingIdAndHistoryType(Long bookingId, int historyType);
 
     List<UserPointHistory> findByUserIdOrderByCreatedAtDesc(Long userId);
 }

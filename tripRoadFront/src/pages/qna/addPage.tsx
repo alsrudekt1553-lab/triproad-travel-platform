@@ -172,7 +172,6 @@ function AddPage() {
                     <p className="font-bold text-gray-800 mb-2">안내사항</p>
                     <p>- 비밀글은 작성자와 관리자만 확인할 수 있습니다.</p>
                     <p>- 답변이 완료된 문의는 수정이 제한됩니다.</p>
-                    <p>- FAQ는 관리자 권한으로만 등록됩니다.</p>
                 </div>
 
                 <div className="flex justify-between gap-2 flex-wrap">

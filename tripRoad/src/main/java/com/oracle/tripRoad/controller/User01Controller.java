@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.oracle.tripRoad.dto.user01.ChangePasswordRequest;
 import com.oracle.tripRoad.dto.user01.User01Dto;
 import com.oracle.tripRoad.service.user01.User01Service;
 import com.oracle.tripRoad.util.CustomFileUtil;
@@ -235,6 +236,39 @@ public class User01Controller {
 	@GetMapping("/view/{fileName}")
 	public ResponseEntity<Resource> viewFile(@PathVariable(name = "fileName") String fileName) {
 		return fileUtil.getUserProfileImage(fileName);
+	}
+	
+	@PutMapping("/password-change")
+	public ResponseEntity<Map<String, Object>> changePassword(
+			@RequestBody ChangePasswordRequest request,
+			HttpSession session
+	) {
+		User01Dto loginUser =
+				(User01Dto) session.getAttribute("LOGIN_USER");
+
+		if (loginUser == null) {
+			return ResponseEntity
+					.status(HttpStatus.UNAUTHORIZED)
+					.body(Map.of(
+							"result", 0,
+							"MESSAGE", "로그인이 필요합니다."
+					));
+		}
+
+		Map<String, Object> result =
+				user01Service.changePassword(
+						loginUser.getUserId(),
+						request.getCurrentPassword(),
+						request.getNewPassword()
+				);
+
+		if (Integer.valueOf(1).equals(result.get("result"))) {
+			return ResponseEntity.ok(result);
+		}
+
+		return ResponseEntity
+				.status(HttpStatus.BAD_REQUEST)
+				.body(result);
 	}
 	
 	// 회원 정보 수정 (multipart/form-data)

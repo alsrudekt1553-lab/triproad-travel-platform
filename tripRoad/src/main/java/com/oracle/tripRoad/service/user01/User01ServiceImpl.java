@@ -1,6 +1,9 @@
 package com.oracle.tripRoad.service.user01;
 
 import java.security.SecureRandom;
+
+import java.time.LocalDateTime;
+
 import java.util.List;
 import java.util.Map;
 
@@ -12,6 +15,13 @@ import com.oracle.tripRoad.dao.emailVerification.EmailVerificationDao;
 import com.oracle.tripRoad.dao.user01.User01Dao;
 import com.oracle.tripRoad.dto.emailVerification.EmailVerificationDto;
 import com.oracle.tripRoad.dto.user01.User01Dto;
+
+import com.oracle.tripRoad.domain.point.UserPoint;
+import com.oracle.tripRoad.domain.point.UserPointHistory;
+import com.oracle.tripRoad.domain.point.UserPointLedger;
+import com.oracle.tripRoad.repository.point.UserPointHistoryRepository;
+import com.oracle.tripRoad.repository.point.UserPointLedgerRepository;
+import com.oracle.tripRoad.repository.point.UserPointRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -30,10 +40,17 @@ public class User01ServiceImpl implements User01Service {
 	private static final long PASSWORD_RESET_TOKEN_TYPE = 100L;
 	private static final long MAX_FAIL_COUNT = 5L;
 	private static final String TOKEN_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	
+	private static final int WELCOME_POINT_BALANCE = 10000;
+	private static final int WELCOME_POINT_EXPIRE_YEARS = 1;
 
 	private final User01Dao user01Dao;
 	private final EmailVerificationDao emailVerificationDao;
 	private final JavaMailSender mailSender;
+	
+	private final UserPointRepository userPointRepository;
+	private final UserPointLedgerRepository userPointLedgerRepository;
+	private final UserPointHistoryRepository userPointHistoryRepository;
 
 	private String createEmailToken() {
 		SecureRandom random = new SecureRandom();
@@ -49,9 +66,56 @@ public class User01ServiceImpl implements User01Service {
 	
 	@Override
 	public Long register(User01Dto user01Dto) {
-		log.info("register userDto->" + user01Dto);
-		user01Dao.insertUser(user01Dto);
-		return user01Dto.getUserId();
+	    log.info("register userDto->" + user01Dto);
+
+	    user01Dao.insertUser(user01Dto);
+
+	    Long newUserId = user01Dto.getUserId();
+
+	    UserPoint userPoint = UserPoint.builder()
+	            .userId(newUserId)
+	            .pointBalance(WELCOME_POINT_BALANCE)
+	            .build();
+
+	    userPointRepository.save(userPoint);
+
+	    UserPointLedger ledger = UserPointLedger.builder()
+	            .userId(newUserId)
+	            .pointAmount(WELCOME_POINT_BALANCE)
+	            .remainingAmount(WELCOME_POINT_BALANCE)
+	            .sourceType(UserPointLedger.SOURCE_SIGNUP_BONUS)
+	            .sourceId(null)
+	            .expiresAt(
+	                    LocalDateTime.now()
+	                            .plusYears(WELCOME_POINT_EXPIRE_YEARS)
+	            )
+	            .build();
+
+	    UserPointLedger savedLedger =
+	            userPointLedgerRepository.save(ledger);
+
+	    UserPointHistory history = UserPointHistory.builder()
+	            .userId(newUserId)
+	            .bookingId(null)
+	            .ledgerId(savedLedger.getLedgerId())
+	            .pointAmount(WELCOME_POINT_BALANCE)
+	            .pointBalanceAfter(WELCOME_POINT_BALANCE)
+	            .historyType(UserPointHistory.TYPE_EARN)
+	            .relatedType(UserPointHistory.RELATED_SIGNUP)
+	            .relatedId(newUserId)
+	            .description("회원가입 적립금")
+	            .build();
+
+	    userPointHistoryRepository.save(history);
+
+	    log.info(
+	            "회원가입 적립금 생성 완료 - userId={}, balance={}, ledgerId={}",
+	            newUserId,
+	            WELCOME_POINT_BALANCE,
+	            savedLedger.getLedgerId()
+	    );
+
+	    return newUserId;
 	}
 
 	@Override
@@ -212,4 +276,69 @@ public class User01ServiceImpl implements User01Service {
 
 		return Map.of("result", 1, "MESSAGE", "비밀번호가 변경되었습니다.");
 	}
+	
+	@Override
+	public Map<String, Object> changePassword(
+			Long userId,
+			String currentPassword,
+			String newPassword
+	) {
+		if (currentPassword == null || currentPassword.isBlank()) {
+			return Map.of(
+					"result", 0,
+					"MESSAGE", "현재 비밀번호를 입력해주세요."
+			);
+		}
+
+		if (newPassword == null || newPassword.isBlank()) {
+			return Map.of(
+					"result", 0,
+					"MESSAGE", "새 비밀번호를 입력해주세요."
+			);
+		}
+
+		if (currentPassword.equals(newPassword)) {
+			return Map.of(
+					"result", 0,
+					"MESSAGE", "새 비밀번호는 현재 비밀번호와 다르게 입력해주세요."
+			);
+		}
+
+		User01Dto user = user01Dao.selectUser(userId);
+
+		if (user == null || user.getUserStatus() == null ||
+				user.getUserStatus() != 100) {
+			return Map.of(
+					"result", 0,
+					"MESSAGE", "회원 정보를 확인할 수 없습니다."
+			);
+		}
+
+		User01Dto verifiedUser = user01Dao.login(
+				User01Dto.builder()
+						.loginId(user.getLoginId())
+						.password(currentPassword)
+						.build()
+		);
+
+		if (verifiedUser == null) {
+			return Map.of(
+					"result", 0,
+					"MESSAGE", "현재 비밀번호가 일치하지 않습니다."
+			);
+		}
+
+		User01Dto passwordDto = User01Dto.builder()
+				.userId(userId)
+				.password(newPassword)
+				.build();
+
+		user01Dao.updatePassword(passwordDto);
+
+		return Map.of(
+				"result", 1,
+				"MESSAGE", "비밀번호가 변경되었습니다."
+		);
+	}
+	
 }

@@ -19,7 +19,10 @@ function BasicLayout() {
         <footer className="border-t border-neutral-200 bg-white">
           <div className="mx-auto max-w-6xl px-4 py-6 text-center text-sm text-neutral-500">
             <div className="font-bold text-neutral-800">TripRoad</div>
-            <div className="mt-1">여행 패키지 예약 서비스</div>
+            
+            <div className="mt-1">대표 : 김트립 | 주소 : 중앙특별시 중앙구 중앙로 1길 7 트립로드</div>
+            <div className="mt-1">사업자등록번호 : 000-00-77777 | 통신판매신고번호 : 중앙00-7777호 | 관광사업자 등록번호 : 제0000-777777호</div>
+            <div className="font-bold mt-1">☏ 고객센터　0000-7777</div>
             <div className="mt-2 text-xs">© 2026 TripRoad. All rights reserved.</div>
           </div>
         </footer>

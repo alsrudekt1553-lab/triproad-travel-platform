@@ -25,13 +25,10 @@ function IndexPage() {
 
   return (
     <div className="w-full">
-      <section className="border-b border-sky-200 bg-sky-50 px-6 py-6">
+      <section className="border-b border-sky-200 bg-sky-100 px-6 py-6">
         <h1 className="text-2xl font-extrabold text-sky-900">
           관리자 페이지
         </h1>
-        <p className="mt-2 text-sm text-neutral-600">
-          예약 현황과 여행 패키지 상품을 관리합니다.
-        </p>
       </section>
 
       <nav className="border-b border-neutral-200 bg-white px-6">

@@ -20,4 +20,9 @@ public interface User01Service {
 	Map<String, Object> sendPasswordResetCode(User01Dto user01Dto);
 	Map<String, Object> verifyPasswordResetCode(Long userId, String emailToken);
 	Map<String, Object> changePasswordAfterVerification(User01Dto user01Dto);
+	Map<String, Object> changePassword(
+			Long userId,
+			String currentPassword,
+			String newPassword
+	);
 }

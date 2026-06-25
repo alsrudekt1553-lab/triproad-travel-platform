@@ -1,10 +1,12 @@
 package com.oracle.tripRoad.service.booking;
 
 import com.oracle.tripRoad.domain.booking.Booking;
+import com.oracle.tripRoad.domain.payment.Payment;
 import com.oracle.tripRoad.domain.product.ProductSchedule;
 import com.oracle.tripRoad.dto.booking.BookingDto;
 import com.oracle.tripRoad.dto.booking.BookingScheduleViewDto;
 import com.oracle.tripRoad.repository.booking.BookingRepository;
+import com.oracle.tripRoad.repository.payment.PaymentRepository;
 import com.oracle.tripRoad.repository.product.ProductScheduleRepository;
 import com.oracle.tripRoad.service.agreement.AgreementService;
 import com.oracle.tripRoad.service.point.UserPointService;
@@ -13,8 +15,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -25,7 +32,7 @@ public class BookingServiceImpl implements BookingService {
     private final ProductScheduleRepository productScheduleRepository;
     private final UserPointService userPointService;
     private final AgreementService agreementService;
-
+    private final PaymentRepository paymentRepository;
 
     @Override
     @Transactional
@@ -36,7 +43,6 @@ public class BookingServiceImpl implements BookingService {
         ProductSchedule schedule = productScheduleRepository
                 .findByIdWithLock(req.getScheduleId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 일정입니다."));
-
 
         int usedHeadcount = bookingRepository
                 .sumHeadcountByScheduleIdAndStatusIn(
@@ -79,6 +85,9 @@ public class BookingServiceImpl implements BookingService {
 
         agreementService.saveAgreements(
                 saved.getBookingId(),
+                saved.getUserId(),
+                schedule.getProduct().getProductId(),
+                saved.getScheduleId(),
                 req.getAgreementIds(),
                 ipAddress,
                 userAgent
@@ -125,7 +134,6 @@ public class BookingServiceImpl implements BookingService {
                 .build();
     }
 
-
     @Override
     @Transactional
     public void releaseBooking(Long bookingId) {
@@ -137,19 +145,16 @@ public class BookingServiceImpl implements BookingService {
             throw new IllegalStateException("선점 상태가 아닌 예약은 해제할 수 없습니다.");
         }
 
-
         int pointToRefund = booking.getPointUsed() != null ? booking.getPointUsed() : 0;
         if (pointToRefund > 0) {
             userPointService.refundPoint(booking.getUserId(), pointToRefund, bookingId);
         }
-
 
         booking.cancel();
 
         log.info("예약 선점 해제 완료 (소프트 삭제) - bookingId={}, refundPoint={}",
                 bookingId, pointToRefund);
     }
-
 
     @Override
     @Transactional
@@ -174,7 +179,6 @@ public class BookingServiceImpl implements BookingService {
                             booking.getBookingId()
                     );
                 }
-
                 booking.cancel();
             } catch (Exception e) {
                 log.error("HOLD 만료 처리 실패 - bookingId={}, msg={}",
@@ -185,30 +189,118 @@ public class BookingServiceImpl implements BookingService {
         log.info("HOLD 만료 처리 완료 (소프트 삭제) - count={}", expired.size());
     }
 
-
     @Override
     @Transactional(readOnly = true)
     public List<BookingDto.InfoResponse> getBookingsByUserId(Long userId) {
-        return bookingRepository.findByUserIdOrderByCreatedAtDesc(userId)
-                .stream()
-                .map(booking -> BookingDto.InfoResponse.builder()
-                        .bookingId(booking.getBookingId())
-                        .userId(booking.getUserId())
-                        .scheduleId(booking.getScheduleId())
-                        .headcount(booking.getHeadcount())
-                        .totalPrice(booking.getTotalPrice())
-                        .discountAmount(booking.getDiscountAmount())
-                        .finalPrice(booking.getFinalPrice())
-                        .status(booking.getStatus())
-                        .holdAt(booking.getHoldAt())
-                        .createdAt(booking.getCreatedAt())
-                        .updatedAt(booking.getUpdatedAt())
-                        .reserverName(booking.getReserverName())
-                        .reserverPhone(booking.getReserverPhone())
-                        .reserverEmail(booking.getReserverEmail())
-                        .pointUsed(booking.getPointUsed() != null ? booking.getPointUsed() : 0)
-                        .build())
+
+        List<Booking> bookings = bookingRepository.findByUserIdOrderByCreatedAtDesc(userId);
+
+        if (bookings.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> scheduleIds = bookings.stream()
+                .map(Booking::getScheduleId)
+                .distinct()
                 .toList();
+
+        List<Long> bookingIds = bookings.stream()
+                .map(Booking::getBookingId)
+                .toList();
+
+        Map<Long, ProductSchedule> scheduleMap = productScheduleRepository
+                .findAllByScheduleIdInFetchProduct(scheduleIds)
+                .stream()
+                .collect(Collectors.toMap(ProductSchedule::getScheduleId, Function.identity()));
+
+        Map<Long, Payment> paymentMap = paymentRepository
+                .findAllByBookingIdIn(bookingIds)
+                .stream()
+                .collect(Collectors.toMap(Payment::getBookingId, Function.identity()));
+
+        return bookings.stream()
+                .map(booking -> {
+                    ProductSchedule schedule = scheduleMap.get(booking.getScheduleId());
+
+                    String    productName = schedule != null ? schedule.getProduct().getProductName() : "(상품 정보 없음)";
+                    LocalDate startDate   = schedule != null ? schedule.getStartDate()                : null;
+                    LocalDate endDate     = schedule != null ? schedule.getEndDate()                  : null;
+
+                    Payment payment = paymentMap.get(booking.getBookingId());
+                    int           payStatus     = payment != null ? payment.getPayStatus()         : 0;
+                    LocalDateTime approvedAt    = payment != null ? payment.getApprovedAt()        : null;
+                    int           paymentMethod = payment != null ? payment.getPaymentMethodType() : 0;
+
+                    return BookingDto.InfoResponse.builder()
+                            .bookingId(booking.getBookingId())
+                            .userId(booking.getUserId())
+                            .scheduleId(booking.getScheduleId())
+                            .headcount(booking.getHeadcount())
+                            .totalPrice(booking.getTotalPrice())
+                            .discountAmount(booking.getDiscountAmount())
+                            .finalPrice(booking.getFinalPrice())
+                            .status(booking.getStatus())
+                            .holdAt(booking.getHoldAt())
+                            .createdAt(booking.getCreatedAt())
+                            .updatedAt(booking.getUpdatedAt())
+                            .reserverName(booking.getReserverName())
+                            .reserverPhone(booking.getReserverPhone())
+                            .reserverEmail(booking.getReserverEmail())
+                            .pointUsed(booking.getPointUsed() != null ? booking.getPointUsed() : 0)
+                            .productName(productName)
+                            .startDate(startDate)
+                            .endDate(endDate)
+                            .payStatus(payStatus)
+                            .approvedAt(approvedAt)
+                            .paymentMethod(paymentMethod)
+                            .build();
+                })
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BookingDto.InfoResponse getBookingDetail(Long bookingId) {
+
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("예약 정보를 찾을 수 없습니다."));
+
+        ProductSchedule schedule = productScheduleRepository
+                .findByIdFetchProduct(booking.getScheduleId())
+                .orElse(null);
+
+        String    productName = schedule != null ? schedule.getProduct().getProductName() : "(상품 정보 없음)";
+        LocalDate startDate   = schedule != null ? schedule.getStartDate()                : null;
+        LocalDate endDate     = schedule != null ? schedule.getEndDate()                  : null;
+
+        Optional<Payment> paymentOpt = paymentRepository.findByBookingId(bookingId);
+        int           payStatus     = paymentOpt.map(Payment::getPayStatus).orElse(0);
+        LocalDateTime approvedAt    = paymentOpt.map(Payment::getApprovedAt).orElse(null);
+        int           paymentMethod = paymentOpt.map(Payment::getPaymentMethodType).orElse(0);
+
+        return BookingDto.InfoResponse.builder()
+                .bookingId(booking.getBookingId())
+                .userId(booking.getUserId())
+                .scheduleId(booking.getScheduleId())
+                .headcount(booking.getHeadcount())
+                .totalPrice(booking.getTotalPrice())
+                .discountAmount(booking.getDiscountAmount())
+                .finalPrice(booking.getFinalPrice())
+                .status(booking.getStatus())
+                .holdAt(booking.getHoldAt())
+                .createdAt(booking.getCreatedAt())
+                .updatedAt(booking.getUpdatedAt())
+                .reserverName(booking.getReserverName())
+                .reserverPhone(booking.getReserverPhone())
+                .reserverEmail(booking.getReserverEmail())
+                .pointUsed(booking.getPointUsed() != null ? booking.getPointUsed() : 0)
+                .productName(productName)
+                .startDate(startDate)
+                .endDate(endDate)
+                .payStatus(payStatus)
+                .approvedAt(approvedAt)
+                .paymentMethod(paymentMethod)
+                .build();
     }
 
 
@@ -231,6 +323,7 @@ public class BookingServiceImpl implements BookingService {
 
         return BookingScheduleViewDto.builder()
                 .scheduleId(schedule.getScheduleId())
+                .productId(schedule.getProduct().getProductId())
                 .productName(schedule.getProduct().getProductName())
                 .unitPrice(schedule.getProduct().getPrice())
                 .startDate(schedule.getStartDate())

@@ -3,6 +3,9 @@ import {
     getBookingsByUser,
     getScheduleForBooking,
 } from "../../api/myPageBookingApi";
+import {
+	formatDate as formatDisplayDate
+} from "../../utils/dateFormat";
 
 type CalendarPageProps = {
     userId: number;
@@ -55,7 +58,9 @@ function CalendarPage({ userId }: CalendarPageProps) {
                             status:
                                 booking.status === 500
                                     ? "예약완료"
-                                    : "예약대기",
+                                    : booking.status === 900
+                                        ? "예약취소"
+                                        : "예약대기",
                         };
                     })
                 );
@@ -168,7 +173,7 @@ function CalendarPage({ userId }: CalendarPageProps) {
     };
 
     return (
-        <div className="bg-white border rounded-lg p-6">
+        <div className="border border-neutral-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-center gap-6 mb-6">
                 <button
                     onClick={movePrevMonth}
@@ -177,7 +182,7 @@ function CalendarPage({ userId }: CalendarPageProps) {
                     ◀
                 </button>
 
-                <h2 className="text-2xl font-bold">
+                <h2 className="text-xl font-extrabold text-neutral-900">
                     {currentYear}년 {currentMonth + 1}월
                 </h2>
 
@@ -269,7 +274,9 @@ function CalendarPage({ userId }: CalendarPageProps) {
             </div>
 
             <section className="mt-6">
-                <h3 className="text-xl font-bold mb-3">여행 일정</h3>
+                <h3 className="mb-3 text-lg font-extrabold text-neutral-900">
+                    여행 일정
+                </h3>
 
                 <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
                     {monthlyTrips.map((trip) => {
@@ -286,7 +293,8 @@ function CalendarPage({ userId }: CalendarPageProps) {
                                 <div>
                                     <p className="font-bold">{trip.title}</p>
                                     <p className="text-gray-500">
-                                        {trip.startDate} ~ {trip.endDate}
+                                        {formatDisplayDate(trip.startDate)} ~{" "}
+                                        {formatDisplayDate(trip.endDate)}
                                     </p>
                                 </div>
 

@@ -5,11 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 public class BookingDto {
-
 
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class HoldRequest {
@@ -20,7 +20,7 @@ public class BookingDto {
         private String     reserverName;
         private String     reserverPhone;
         private String     reserverEmail;
-        private int        pointUsed;      
+        private int        pointUsed;     
         private List<Long> agreementIds;   
     }
 
@@ -36,7 +36,6 @@ public class BookingDto {
         private int           status;
         private LocalDateTime holdAt;
         private LocalDateTime createdAt;
-
 
         private String reserverName;
         private String reserverPhone;
@@ -65,10 +64,17 @@ public class BookingDto {
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
 
-
         private String reserverName;
         private String reserverPhone;
         private String reserverEmail;
         private int    pointUsed;
+
+        private String    productName;
+        private LocalDate startDate;
+        private LocalDate endDate;
+
+        private int           payStatus;      
+        private LocalDateTime approvedAt;     
+        private int           paymentMethod;  
     }
 }

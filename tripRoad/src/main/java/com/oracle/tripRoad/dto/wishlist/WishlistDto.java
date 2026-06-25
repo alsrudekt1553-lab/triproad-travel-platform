@@ -21,4 +21,5 @@ public class WishlistDto {
 	private Long price;
 	
 	private String imageName;
+	private Boolean wished;
 }

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.oracle.tripRoad.MainMapper">
+
+    <!-- 평균 별점이 높은 상품 3개 -->
+	<select id="recommendProducts"
+	        resultType="com.oracle.tripRoad.dto.main.MainProductDto">
+	    SELECT *
+	    FROM (
+	        SELECT
+	            p.product_id AS productId,
+	            p.product_name AS productName,
+	            p.price AS price,
+	            p.region_id AS regionId,
+	            region.code_contents AS regionName,
+	            t.theme_name AS themeName,
+	            pi.image_name AS imageName,
+	            (
+	                SELECT AVG(r.rating)
+	                FROM review r
+	                JOIN product_schedule ps
+	                  ON r.schedule_id = ps.schedule_id
+	                WHERE ps.product_id = p.product_id
+	                  AND r.review_status = 100
+	            ) AS averageRating
+	        FROM travel_product p
+	        LEFT JOIN theme t
+	          ON p.theme_code = t.theme_code
+	        LEFT JOIN status_type region
+	          ON region.bcode = 510
+	         AND region.mcode = p.region_id
+	        LEFT JOIN product_image pi
+	          ON pi.product_id = p.product_id
+	         AND pi.img_order = 1
+	        WHERE EXISTS (
+	            SELECT 1
+	            FROM review r
+	            JOIN product_schedule ps
+	              ON r.schedule_id = ps.schedule_id
+	            WHERE ps.product_id = p.product_id
+	              AND r.review_status = 100
+	        )
+	        ORDER BY averageRating DESC, p.product_id DESC
+	    )
+	    WHERE ROWNUM &lt;= 3
+	</select>
+
+    <!-- 최근 등록된 상품 3개 -->
+	<select id="newProducts"
+	        resultType="com.oracle.tripRoad.dto.main.MainProductDto">
+	    SELECT *
+	    FROM (
+	        SELECT
+	            p.product_id AS productId,
+	            p.product_name AS productName,
+	            p.price AS price,
+	            p.region_id AS regionId,
+	            region.code_contents AS regionName,
+	            t.theme_name AS themeName,
+	            pi.image_name AS imageName,
+	            (
+	                SELECT AVG(r.rating)
+	                FROM review r
+	                JOIN product_schedule ps
+	                  ON r.schedule_id = ps.schedule_id
+	                WHERE ps.product_id = p.product_id
+	                  AND r.review_status = 100
+	            ) AS averageRating
+	        FROM travel_product p
+	        LEFT JOIN theme t
+	          ON p.theme_code = t.theme_code
+	        LEFT JOIN status_type region
+	          ON region.bcode = 510
+	         AND region.mcode = p.region_id
+	        LEFT JOIN product_image pi
+	          ON pi.product_id = p.product_id
+	         AND pi.img_order = 1
+	        ORDER BY p.reg_date DESC, p.product_id DESC
+	    )
+	    WHERE ROWNUM &lt;= 3
+	</select>
+
+</mapper>

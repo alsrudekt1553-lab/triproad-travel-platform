@@ -11,13 +11,11 @@ import java.util.Optional;
 
 public interface AgreementTypeRepository extends JpaRepository<AgreementType, Long> {
 
-
     @Query("SELECT a FROM AgreementType a " +
            "WHERE a.effectiveFrom <= :today " +
            "AND (a.effectiveTo IS NULL OR a.effectiveTo >= :today) " +
            "ORDER BY a.typeCode ASC")
     List<AgreementType> findCurrentAgreements(@Param("today") LocalDate today);
-
 
     @Query("SELECT a FROM AgreementType a " +
            "WHERE a.typeCode = :typeCode " +
@@ -26,3 +24,4 @@ public interface AgreementTypeRepository extends JpaRepository<AgreementType, Lo
     Optional<AgreementType> findCurrentByTypeCode(@Param("typeCode") int typeCode,
                                                   @Param("today") LocalDate today);
 }
+

@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { Navigate } from "react-router";
 
 const Loading = () => <div>Loading...</div>;
-
+const ProductAllReviewPage = lazy(() => import("../pages/review/ProductAllReviewPage"));
 const ReviewIndex = lazy(() => import("../pages/review/indexPage"));
 const ReviewList = lazy(() => import("../pages/review/listPage"));
 
@@ -51,6 +51,14 @@ const reviewRouter = () => {
           </Suspense>
         ),
       },
+      {
+  path: "product/:productId",
+  element: (
+    <Suspense fallback={<Loading />}>
+      <ProductAllReviewPage />
+    </Suspense>
+  ),
+},
     ],
   };
 };

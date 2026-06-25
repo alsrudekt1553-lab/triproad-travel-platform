@@ -13,18 +13,17 @@ import java.time.LocalDateTime;
 @Builder
 public class Payment {
 
-
-    public static final int PAY_STATUS_READY     = 100;  
+    public static final int PAY_STATUS_READY     = 100; 
     public static final int PAY_STATUS_APPROVED  = 500; 
-    public static final int PAY_STATUS_CANCELLED = 900;  
+    public static final int PAY_STATUS_CANCELLED = 900;
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "payment_seq")
     @SequenceGenerator(name = "payment_seq", sequenceName = "PAYMENT_SEQ", allocationSize = 1)
-    @Column(name = "PAYMENT_ID")
+    @Column(name = "PAYMENT_ID", precision = 19)
     private Long paymentId;
 
-    @Column(name = "BOOKING_ID")
+    @Column(name = "BOOKING_ID", precision = 19)
     private Long bookingId;
 
     @Column(name = "USER_ID")
@@ -55,7 +54,6 @@ public class Payment {
         this.payStatus = PAY_STATUS_APPROVED;
         this.approvedAt = approvedAt;
     }
-
 
     public void cancel() {
         this.payStatus = PAY_STATUS_CANCELLED;

@@ -138,17 +138,19 @@ function ReviewPage({ userId }: ReviewPageProps) {
 
   if (loading) {
     return (
-      <div className="bg-white border rounded-lg p-6 text-center text-gray-500">
+      <div className="border border-neutral-200 bg-white p-6 text-center text-neutral-500 shadow-sm">
         내 후기를 불러오는 중입니다.
       </div>
     );
   }
 
   return (
-    <div className="bg-white border rounded-lg p-6">
+    <div className="border border-neutral-200 bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold">나의 후기</h2>
+          <h2 className="text-xl font-extrabold text-neutral-900">
+            나의 후기
+          </h2>
           <p className="text-gray-500 mt-1">
             작성한 후기 {reviews.length}개 · 평균 평점 {averageRating}
           </p>
@@ -185,7 +187,7 @@ function ReviewPage({ userId }: ReviewPageProps) {
             <div className="flex-1">
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="text-xl font-bold">
+                  <h3 className="text-lg font-extrabold text-neutral-900">
                     Schedule ID : {review.scheduleId}
                   </h3>
 

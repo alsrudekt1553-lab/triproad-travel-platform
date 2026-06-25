@@ -20,10 +20,15 @@ import lombok.NoArgsConstructor;
 public class ProductImage {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE,
-        generator = "image_seq")
-    @SequenceGenerator(name = "image_seq",
-        sequenceName = "image_seq", allocationSize = 1)
+    @GeneratedValue(
+    		strategy = GenerationType.SEQUENCE,
+    		generator = "product_image_seq_generator"
+    	)
+    @SequenceGenerator(
+    		name = "product_image_seq_generator",
+    		sequenceName = "product_image_seq",
+    		allocationSize = 1
+    	)
     @Column(name = "image_id")
     private Long imageId;
 
