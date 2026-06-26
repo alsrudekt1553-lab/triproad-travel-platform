@@ -1,50 +1,139 @@
-# TRIPROAD
-
-국내 여행 패키지 예약 플랫폼 프로젝트입니다.
+# TripRoad - 여행 패키지 예약 플랫폼
 
 ## 프로젝트 소개
 
-사용자가 여행 상품을 조회하고 예약, 결제, 후기 작성까지 진행할 수 있는 여행 패키지 예약 서비스를 구현한 팀 프로젝트입니다.
+TripRoad는 여행 패키지 예약부터 일정 관리, 마이페이지 기능까지 제공하는 여행 예약 플랫폼입니다.
 
-## 기술 스택
+사용자는 여행 상품을 예약하고 예약 내역을 확인할 수 있으며,
+여행 일정에 맞춘 체크리스트 작성, 후기 작성, 찜 목록 관리 등 여행 전후의 편의 기능을 제공합니다.
 
-### Frontend
+---
 
-* React
-* TypeScript
-* Axios
+## 개발 환경
 
-### Backend
+### Front-End
+- React
+- TypeScript
+- HTML5
+- CSS3
 
-* Java
-* Spring Boot
-* JPA
-* Oracle Database
+### Back-End
+- Java
+- Spring Boot
+- Spring Data JPA
+
+### Database
+- Oracle Database
+
+### Tools
+- Git / GitHub
+- IntelliJ
+- VS Code
+
+---
 
 ## 담당 기능
 
-- 마이페이지 메인 (MyPage)
-- 예약 내역
+### 마이페이지
+
+- 메인 화면
+- 예약 내역 조회
 - 여행 캘린더
-- 체크리스트 (Checklist, ChecklistItem)
-- 찜목록 (Wishlist)
+- 체크리스트
+- 찜목록
 - 나의 후기
 - 나의 문의
 - 회원정보 수정
 
-※ 담당 화면 코드는 tripRoadFront/src/pages/myPage 경로에서 확인할 수 있습니다.
+담당 화면 코드는
 
-## 주요 구현 내용
+```
+tripRoadFront/src/pages/myPage
+```
 
-* REST API 연동
-* 사용자별 예약 데이터 조회
-* 여행 일정 캘린더 구현
-* 체크리스트 CRUD 기능 구현
-* 사용자 중심 마이페이지 기능 개발
+경로에서 확인할 수 있습니다.
 
-## 프로젝트를 통해 배운 점
+---
 
-마이페이지 기능을 구현하며 사용자가 어떤 정보를 필요로 하는지, 어떤 방식으로 제공하는 것이 더 편리한지 고민해볼 수 있었습니다.
+## 핵심 구현
 
-예약 상태와 여행 날짜를 활용한 캘린더 기능, 체크리스트 기능 등을 구현하며 단순한 기능 개발을 넘어 사용자 경험을 고려하는 과정의 중요성을 배웠습니다. 또한 React와 Spring Boot를 연동하며 API를 통해 데이터를 전달하고 화면에 출력하는 전체 흐름을 이해할 수 있었습니다.
+### 1. 예약 내역 조회 API
 
+- 사용자 ID를 기반으로 예약 목록 조회
+- Entity → DTO 변환
+- 최신 예약순 정렬
+
+사용 파일
+
+```
+MyPageBookingController.java
+```
+
+핵심 코드
+
+```java
+@GetMapping("/user/{userId}")
+public List<BookingDto.InfoResponse> getBookingsByUser(...)
+```
+
+---
+
+### 2. 찜목록 토글 기능
+
+- 이미 찜한 상품이면 삭제
+- 찜하지 않은 상품이면 등록
+- 하나의 API로 추가/삭제 처리
+
+사용 파일
+
+```
+MyPageServiceImpl.java
+```
+
+핵심 코드
+
+```java
+Optional<Wishlist> existing = wishlistRepository.findByMemberIdAndPackageId(...);
+
+if(existing.isPresent()){
+    ...
+}else{
+    ...
+}
+```
+
+---
+
+### 3. 체크리스트 CRUD
+
+- 체크리스트 생성
+- 체크리스트 조회
+- 체크리스트 수정
+- 체크리스트 삭제
+
+사용 파일
+
+```
+ChecklistRepository.java
+ChecklistItemRepository.java
+MyPageServiceImpl.java
+```
+
+---
+
+## 프로젝트 목표
+
+1차 프로젝트에서는 ERP 기능을 구현하며 정해진 요구사항을 정확하게 구현하는 경험을 쌓았습니다.
+
+2차 프로젝트에서는 사용자 중심의 기능을 고민하는 것을 목표로 하였습니다.
+
+예약 상태를 활용한 후기 작성, 여행 날짜를 기준으로 한 캘린더 표시, 여행 준비를 위한 체크리스트 기능 등 실제 사용자의 편의성을 높일 수 있는 기능을 직접 기획하고 구현하였습니다.
+
+---
+
+## 배운 점
+
+- REST API와 React 화면을 연동하는 전체 흐름을 경험할 수 있었습니다.
+- JPA를 활용하여 Entity 중심으로 데이터를 관리하는 방법을 익혔습니다.
+- 사용자의 입장에서 필요한 기능과 화면 구성을 고민하는 경험을 할 수 있었습니다.
+- 하나의 기능을 구현할 때도 화면, API, 데이터베이스가 함께 동작하는 구조를 이해하게 되었습니다.
